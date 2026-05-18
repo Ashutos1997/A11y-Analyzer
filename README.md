@@ -99,12 +99,28 @@ To export as PDF: open it → Ctrl+P → Save as PDF.
 ```
 a11y-extension/
 ├── manifest.json      Chrome extension manifest (MV3)
-├── popup.html         All 3 screens
-├── popup.css          Styles (Indigo Ink, 8px grid, WCAG AA)
-├── popup.js           Screen logic + report generation
-├── content.js         Analysis engine (injected into active tab)
-└── icons/
-    ├── icon16.png
-    ├── icon48.png
-    └── icon128.png
+├── popup.html         Main HTML popup scaffolding (All 3 screens)
+├── popup.css          Core application styling (Alabaster, Sand & Indigo)
+├── animation.css      Screen 2 high-fidelity scanning animation styles
+├── popup.js           Popup state controller & offline HTML report generator
+├── content.js         Page analyzer injection engine (14 categorical checks)
+├── meta.js            Metadata & helper configurations
+├── .gitignore         Git ignore rule configurations
+├── README.md          Walkthrough, installation & audit documentation
+├── icons/             Extension icon assets
+│   ├── icon16.png
+│   ├── icon48.png
+│   └── icon128.png
+├── images/            Walkthrough & report screenshots for README
+│   ├── screen1_v2.png
+│   ├── screen2_v2.png
+│   ├── screen3_v2.png
+│   └── report_v2.png
+├── phosphor/          Offline Phosphor icon fonts & stylesheet
+│   ├── style.css
+│   ├── Phosphor.ttf
+│   ├── Phosphor.woff
+│   └── Phosphor.woff2
+└── design-auditor/    Design Auditor skill file & guidelines
+    └── SKILL.md
 ```
