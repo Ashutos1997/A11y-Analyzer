@@ -1,0 +1,1060 @@
+/* ============================================================
+   A11y Analyzer — Design System & Component Styles
+   ─────────────────────────────────────────────────
+   Typography    : Ubuntu Condensed (headers) + Inter (body)
+   Type scale    : 12 · 14 · 16 · 18 · 20 · 24 (even, min 12)
+   Spacing       : 4 · 8 · 12 · 16 · 20 · 24 · 32 (even)
+   Icons         : Phosphor (inline SVG, Regular weight)
+   Layout        : Flexbox throughout (no absolute positioning)
+   Radius formula: outer = inner + padding
+   Compliance    : WCAG 2.1 AA contrast ratios
+============================================================ */
+
+/* ── Design Tokens ────────────────────────────────────────── */
+:root {
+  /* ─ Palette — Premium Desaturated Alabaster & Soft Sand ─ */
+  --ink-950:  #0E0E0B; /* Deepest charcoal black */
+  --ink-900:  #181816; /* Clean charcoal ink text */
+  --ink-800:  #363632;
+  --ink-700:  #51514C; /* Sophisticated warm taupe secondary text */
+  --ink-600:  #6E6E69;
+  --ink-500:  #8E8E8A;
+  --ink-400:  #B2B2AC; /* Muted warm-slate metadata */
+  --ink-300:  #D2D2CA;
+  --ink-200:  #EBEAE4; /* Subtle warm border clay tone */
+  --ink-100:  #FAF9F6; /* Secondary card background / Softest Warm Sand Tint */
+  --ink-50:   #FDFDFB; /* Dominant clean alabaster canvas */
+
+  --indigo-800: #3730A3;
+  --indigo-700: #4338CA;
+  --indigo-600: #4F46E5;
+  --indigo-500: #6366F1;
+  --indigo-400: #818CF8;
+  --indigo-300: #A5B4FC;
+  --indigo-200: #C7D2FE;
+  --indigo-100: #E0E7FF;
+  --indigo-50:  #EEF2FF;
+
+  /* ─ Semantic colors ─ */
+  --c-bg:             #FDFDFB; /* Warm alabaster off-white (60% Primary) */
+  --c-surface:        var(--ink-100); /* Curated soft sand card surface (30% Secondary) */
+  --c-surface-alt:    #F4F3ED; /* Row hover background / Soft Almond */
+  --c-text:           var(--ink-900); /* Dominant charcoal ink */
+  --c-text-secondary: var(--ink-700); /* Muted warm taupe */
+  --c-text-tertiary:  var(--ink-400); /* Subtle metadata */
+  --c-border:         var(--ink-200); /* Subtle clay borders */
+  --c-border-subtle:  rgba(81, 81, 76, 0.05); /* Taupe-tinted subtle border */
+
+  --c-primary:        var(--ink-900); /* Charcoal Ink Accent (10% Accent) */
+  --c-primary-hover:  var(--ink-800);
+  --c-primary-active: var(--ink-950);
+  --c-primary-outline: var(--ink-400);
+  --c-primary-subtle: var(--ink-100);
+  --c-primary-muted:  var(--ink-200);
+
+  --c-accent:         #F59E0B;
+
+  --c-critical:       #DC2626;
+  --c-critical-bg:    #FEF2F2;
+  --c-warning:        #D97706;
+  --c-warning-bg:     #FFFBEB;
+  --c-info:           #2563EB;
+  --c-info-bg:        #EFF6FF;
+  --c-pass:           #059669;
+  --c-pass-bg:        #ECFDF5;
+
+  /* ─ State specific design tokens ─ */
+  --c-success-bg:     #DCFCE7;
+  --c-success-border: #BBF7D0;
+  --c-success-text:   #15803D;
+  --c-failure-bg:     #FEE2E2;
+  --c-failure-border: #FCA5A5;
+  --c-failure-text:   #B91C1C;
+
+  /* ─ Spacing (even-number system) ─ */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-5:  20px;
+  --sp-6:  24px;
+  --sp-8:  32px;
+
+  /* ─ Type scale (even numbers only, min 12px) ─
+       12  — captions, badges, tags
+       14  — body, labels, values
+       16  — subheadings, header title
+       18  — buttons, section titles
+       20  — large headings (domain)
+       24  — display (score number)
+  ─ */
+  --fs-12: 12px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-18: 18px;
+  --fs-20: 20px;
+  --fs-24: 24px;
+
+  /* ─ Radii (even numbers, formula: outer = inner + padding) ─
+       4   — leaf controls: buttons, inputs
+       8   — inner elements: score-icon, info rows
+       12  — standalone cards, containers (no inner radius)
+       16  — outer wrapping a r-4 child with 12px padding
+       24  — outer wrapping a r-8 child with 16px padding
+  ─ */
+  --r-4:   4px;
+  --r-8:   8px;
+  --r-12:  12px;
+  --r-16:  16px;
+  --r-24:  24px;
+  --r-pill: 9999px;
+
+  /* ─ Typography ─ */
+  --font-sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-title: 'Ubuntu Condensed', 'Arial Narrow', ui-condensed, system-ui, sans-serif;
+  --font-mono:  ui-monospace, 'SF Mono', 'Fira Mono', 'Cascadia Code', monospace;
+
+  /* ─ Phosphor icon size tokens ─ */
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+
+  /* ─ Shadows ─ */
+  --shadow-sm:  0 1px 2px rgba(15, 14, 26, 0.05);
+  --shadow-md:  0 4px 12px rgba(15, 14, 26, 0.08);
+  --shadow-lg:  0 8px 24px rgba(15, 14, 26, 0.12);
+  --shadow-glow: 0 0 24px rgba(99, 102, 241, 0.18);
+
+  /* ─ Transitions ─ */
+  --ease-out:  cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast:  120ms;
+  --dur-normal: 200ms;
+  --dur-slow:  350ms;
+
+  /* ─ Layout ─ */
+  --popup-width: 368px;
+  --gutter:     16px;
+  --content-width: calc(var(--popup-width) - var(--gutter) * 2);
+}
+
+/* ── Reset ────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+ul { list-style: none; }
+
+/* ── Base ─────────────────────────────────────────────────── */
+body {
+  width: var(--popup-width);
+  background: var(--c-bg);
+  font-family: var(--font-sans);
+  font-size: var(--fs-14);
+  color: var(--c-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Tactile 2% SVG noise grain overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* ── Screen management ────────────────────────────────────── */
+.screen {
+  display: none;
+  flex-direction: column;
+  opacity: 1;
+  transform: none;
+}
+
+.screen.active {
+  display: flex;
+}
+
+/* Animated transitions only when user has no reduced motion preference */
+@media (prefers-reduced-motion: no-preference) {
+  .screen {
+    opacity: 0;
+    transform: translateY(4px);
+    transition:
+      opacity var(--dur-slow) var(--ease-out),
+      transform var(--dur-slow) var(--ease-out);
+  }
+
+  .screen.active {
+    opacity: 1;
+    transform: translateY(0);
+    animation: screen-enter var(--dur-slow) var(--ease-out) forwards;
+  }
+
+  @keyframes screen-enter {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* ── Accessibility utilities ──────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Focus ring (global) ──────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+  border-radius: var(--r-8);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SHARED: Header Component
+   Height: 48px  |  Padding: 0 16px  |  Phosphor icon: 24px
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.s1-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--gutter);
+  width: var(--popup-width);
+  height: 48px;
+  background: var(--c-surface-alt);
+  border-bottom: 1px solid var(--c-border-subtle);
+  flex-shrink: 0;
+}
+
+.s1-header__left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1); /* 4px */
+}
+
+.s1-header__icon {
+  font-size: var(--icon-lg);  /* 24px — Phosphor Regular */
+  color: var(--c-primary);
+  flex-shrink: 0;
+}
+
+/* Brand icon springy rotation on hover — motion preferred */
+@media (prefers-reduced-motion: no-preference) {
+  .s1-header__icon {
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .s1-header:hover .s1-header__icon {
+    transform: rotate(15deg) scale(1.1);
+  }
+}
+
+/* Ubuntu Condensed at 18px — header only */
+.s1-header__title {
+  font-family: var(--font-title);
+  font-size: var(--fs-18);
+  font-weight: 400;  /* Ubuntu Condensed ships in 400 only */
+  line-height: 1;
+  color: var(--c-text);
+}
+
+/* Language Switcher Button — Interactive & Minimal */
+.header-lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  padding: 6px 10px;
+  border-radius: var(--r-4);
+  user-select: none;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.header-lang-switch:hover {
+  background: var(--c-border-subtle);
+}
+
+.header-lang-switch:focus-visible {
+  outline: 1.5px solid var(--c-primary);
+  outline-offset: 1px;
+}
+
+.lang-divider {
+  color: var(--c-text-tertiary);
+  font-weight: 300;
+  opacity: 0.5;
+}
+
+.lang-text {
+  font-size: 12px;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+/* Active language colors mapped dynamically via data-lang attribute */
+.header-lang-switch[data-lang="en"] .lang-eng {
+  color: var(--c-primary);
+}
+.header-lang-switch[data-lang="en"] .lang-kor {
+  color: var(--c-text-tertiary);
+}
+
+.header-lang-switch[data-lang="ko"] .lang-eng {
+  color: var(--c-text-tertiary);
+}
+.header-lang-switch[data-lang="ko"] .lang-kor {
+  color: var(--c-primary);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SCREEN 1 — Site Info + Analyze
+   Padding: 16px gutter throughout
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* Site identity — clean on white, no container */
+.s1-site {
+  padding: var(--sp-5) var(--gutter) var(--sp-4);  /* 20px 16px 16px */
+}
+
+.s1-site__identity-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+
+.s1-site__favicon-box {
+  display: none; /* dynamically set to 'flex' by JS */
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: #ffffff;
+  border: 1.5px solid var(--c-primary);
+  border-radius: var(--r-8);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.s1-site__favicon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Domain: Inter 18px medium — hero element */
+.s1-site__domain {
+  font-family: var(--font-sans);
+  font-size: var(--fs-18);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--c-text);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: var(--content-width);
+  margin-bottom: 0; /* managed by row container */
+}
+
+/* Meta row: icon + protocol inline */
+.s1-site__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1); /* 4px */
+}
+
+/* Globe icon — inline, secondary */
+.s1-site__icon {
+  font-size: var(--fs-14);
+  color: var(--c-text-tertiary);
+}
+
+/* Protocol chip: 12px uppercase, subtle */
+.s1-site__protocol {
+  font-family: var(--font-sans);
+  font-size: var(--fs-12);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-text-tertiary);
+}
+
+/* Divider */
+.s1-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--c-border-subtle);
+  flex-shrink: 0;
+}
+
+/* Info rows — 8px gap, 16px side padding */
+.s1-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2); /* 8px */
+  padding: var(--sp-4) var(--gutter) var(--sp-4); /* 16px top, bottom and sides */
+  flex-shrink: 0;
+}
+
+/* Each row: 36px height, 8px padding — no inner radius → leaf r-8 */
+.s1-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--sp-2); /* 0 8px */
+  height: 36px;
+  background: var(--c-surface-alt);
+  border-radius: var(--r-8);
+}
+
+.s1-info-row__left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2); /* 8px */
+  color: var(--c-text);
+}
+
+/* Phosphor icons in rows: 20px */
+.s1-info-row__left .ph {
+  font-size: var(--icon-md);
+  color: var(--c-text-secondary);
+  flex-shrink: 0;
+}
+
+/* Label: Inter 14px medium */
+.s1-info-row__label {
+  font-size: var(--fs-14);
+  font-weight: 500;
+  color: var(--c-text);
+}
+
+/* Value: Inter 14px regular */
+.s1-info-row__value {
+  font-size: var(--fs-14);
+  font-weight: 300;
+  color: var(--c-text-secondary);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* CTA button — 16px padding, 44px height */
+.s1-actions {
+  padding: var(--sp-4) var(--gutter); /* 16px */
+  flex-shrink: 0;
+}
+
+/* Button: accent color (10% — indigo), Inter 18px, 44px height */
+.s1-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: var(--content-width);
+  height: 44px; /* Enhanced to 44px touch target */
+  background: var(--c-primary);
+  border: 1px solid var(--c-primary-active);
+  border-radius: var(--r-8);
+  font-family: var(--font-sans);
+  font-size: var(--fs-14); /* Aligned size to 14px */
+  font-weight: 600; /* Aligned weight to 600 */
+  color: #FFFFFF;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(24, 24, 22, 0.08);
+  transition:
+    background var(--dur-normal) var(--ease-out),
+    border-color var(--dur-normal) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-normal) var(--ease-out);
+}
+
+.s1-btn:hover:not(:disabled) {
+  background: var(--c-primary-hover);
+  border-color: var(--c-primary);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(24, 24, 22, 0.12);
+}
+
+.s1-btn:active:not(:disabled) {
+  background: var(--c-primary-active);
+  border-color: var(--ink-950);
+  color: #FFFFFF;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .s1-btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+}
+
+.s1-btn:focus-visible {
+  outline: 2px solid var(--c-primary-outline);
+  outline-offset: 2px;
+}
+
+.s1-btn:disabled {
+  background: var(--c-primary-muted);
+  border-color: var(--c-primary-muted);
+  color: var(--ink-400);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SCREEN 2 — Analysis in Progress
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#screen-loading {
+  width: var(--popup-width);
+  background: var(--c-bg);
+}
+
+#scanner-active {
+  min-height: 439px; /* Maintained layout height during active scanning to prevent visual jump */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SCREEN 3 — Results (fully flow-based, no absolute pos)
+   All padding uses 16px gutter, gaps use 8px
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#screen-results {
+  width: var(--popup-width);
+  background: var(--c-bg);
+}
+
+/* Grade Hero — premium unboxed design */
+.s3-grade-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5); /* Generous 20px gap for high-end visual breathing room */
+  padding: var(--sp-5) var(--gutter) var(--sp-4); /* Symmetrical padding */
+}
+
+/* Score icon container */
+.s3-score-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Score number: Inter 16px bold - fits beautifully within inner border */
+.s3-score-number {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: var(--fs-16) !important; /* Elegant nested sizing */
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.s3-grade-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+/* Summary status: Inter 22px semibold — editorial, premium typography */
+.s3-report-summary {
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--c-text);
+  letter-spacing: -0.03em;
+}
+
+/* Domain name label: Inter 13px regular secondary link-affinity */
+.s3-website-domain {
+  font-family: var(--font-sans);
+  font-size: var(--fs-13);
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--c-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px; /* Tight, crisp spacing */
+}
+
+/* Tags row: 8px gap */
+.s3-tags {
+  display: flex;
+  gap: var(--sp-2); /* 8px */
+  margin-top: var(--sp-2); /* 8px spacing below domain */
+}
+
+/* Tag pill: 12px min font, even padding */
+.s3-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border-subtle);
+  border-radius: var(--r-8);
+  font-size: var(--fs-12);
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--c-text-secondary);
+}
+
+/* Divider */
+.s3-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--c-border-subtle);
+  margin: 0;
+  border: none;
+  flex-shrink: 0;
+}
+
+/* Info section: 8px gap, 16px side padding */
+.s3-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2); /* 8px */
+  padding: var(--sp-4) var(--gutter); /* 16px top and bottom, 16px horizontal */
+}
+
+/* Info row: 36px height, 8px padding — leaf → r-8 */
+.s3-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--sp-2); /* 0 8px */
+  height: 36px;
+  background: var(--c-surface-alt);
+  border-radius: var(--r-8);
+  border: 1px solid transparent;
+}
+
+.s3-info-left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2); /* 8px */
+}
+
+/* Phosphor icons in info rows: 20px */
+.s3-info-left .ph {
+  font-size: var(--icon-md);
+  color: var(--c-text-secondary);
+  flex-shrink: 0;
+}
+
+/* Label: Inter 14px medium */
+.s3-info-label {
+  font-size: var(--fs-14);
+  font-weight: 500;
+  color: var(--c-text);
+}
+
+/* Value: flat, high-contrast dashboard chip, no glassmorphism */
+.s3-info-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--sp-2); /* 8px horizontal */
+  height: 22px;
+  background: var(--ink-100);
+  border: 1px solid var(--c-border-subtle);
+  border-radius: var(--r-8);
+  font-family: var(--font-sans);
+  font-size: var(--fs-12);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--c-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Color-coded flat states */
+.s3-info-value[data-state="pass"] {
+  background: var(--c-success-bg);
+  border-color: var(--c-success-border);
+  color: var(--c-success-text);
+}
+
+.s3-info-value[data-state="fail"] {
+  background: var(--c-failure-bg);
+  border-color: var(--c-failure-border);
+  color: var(--c-failure-text);
+}
+
+/* Actions section: side-by-side horizontal row layout */
+.s3-actions-section {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2); /* 8px horizontal gap to maximize horizontal space */
+  padding: var(--sp-4) var(--gutter); /* 16px top/bottom, 16px horizontal */
+}
+
+/* Primary CTA Button: solid Charcoal Ink */
+.s3-download-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 44px; /* Enhanced to 44px touch target */
+  background: var(--c-primary);
+  border: 1px solid var(--c-primary-active);
+  border-radius: var(--r-8);
+  font-family: var(--font-sans);
+  font-size: var(--fs-14);
+  font-weight: 600;
+  color: #FFFFFF;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(24, 24, 22, 0.08);
+  transition:
+    background var(--dur-normal) var(--ease-out),
+    border-color var(--dur-normal) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-normal) var(--ease-out);
+}
+
+/* Primary CTA: Hover State */
+.s3-download-btn:hover:not(:disabled) {
+  background: var(--c-primary-hover);
+  border-color: var(--c-primary);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(24, 24, 22, 0.12);
+}
+
+/* Primary CTA: Selected / Active State */
+.s3-download-btn:active:not(:disabled),
+.s3-download-btn.selected:not(:disabled) {
+  background: var(--c-primary-active);
+  border-color: var(--ink-950);
+  color: #FFFFFF;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .s3-download-btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+}
+
+.s3-download-btn:focus-visible {
+  outline: 2px solid var(--c-primary-outline);
+  outline-offset: 2px;
+}
+
+.s3-download-btn:disabled {
+  background: var(--c-primary-muted);
+  border-color: var(--c-primary-muted);
+  color: var(--ink-400);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Secondary CTA Button: flat neutral gray */
+.s3-secondary-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 44px; /* Enhanced to 44px touch target */
+  background: var(--ink-50);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--r-8);
+  font-family: var(--font-sans);
+  font-size: var(--fs-14);
+  font-weight: 600;
+  color: var(--ink-700);
+  cursor: pointer;
+  transition:
+    background var(--dur-normal) var(--ease-out),
+    border-color var(--dur-normal) var(--ease-out),
+    color var(--dur-normal) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-normal) var(--ease-out);
+}
+
+/* Secondary CTA: Hover State */
+.s3-secondary-btn:hover:not(:disabled) {
+  background: var(--ink-100);
+  border-color: var(--ink-300);
+  color: var(--ink-900);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+/* Secondary CTA: Selected / Active State */
+.s3-secondary-btn:active:not(:disabled),
+.s3-secondary-btn.selected:not(:disabled) {
+  background: var(--ink-200);
+  border-color: var(--ink-400);
+  color: var(--ink-950);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .s3-secondary-btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+}
+
+.s3-secondary-btn:focus-visible {
+  outline: 2px solid var(--c-primary-outline);
+  outline-offset: 2px;
+}
+
+.s3-secondary-btn:disabled {
+  background: var(--ink-100);
+  border-color: var(--c-border-subtle);
+  color: var(--c-text-secondary);
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ── Score color modifiers (set via JS) ───────────────────── */
+.s3-score-icon[data-grade="excellent"] .s3-score-number { color: var(--c-pass); }
+.s3-score-icon[data-grade="good"]      .s3-score-number { color: var(--c-primary); }
+.s3-score-icon[data-grade="needs-work"] .s3-score-number { color: var(--c-warning); }
+.s3-score-icon[data-grade="poor"]      .s3-score-number { color: var(--c-critical); }
+
+.s3-tag[data-severity="pass"] {
+  background: var(--c-pass-bg);
+  color: var(--c-pass);
+  border: 1px solid rgba(5, 150, 105, 0.18);
+}
+.s3-tag[data-severity="fail"] {
+  background: var(--c-critical-bg);
+  color: var(--c-critical);
+  border: 1px solid rgba(220, 38, 38, 0.18);
+}
+.s3-tag[data-severity="critical"] {
+  background: var(--c-critical-bg);
+  color: var(--c-critical);
+  border: 1px solid rgba(220, 38, 38, 0.18);
+}
+.s3-tag[data-severity="none"] {
+  background: var(--c-pass-bg);
+  color: var(--c-pass);
+  border: 1px solid rgba(5, 150, 105, 0.18);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   VISUAL POLISH — 60:30:10 color system
+   ─────────────────────────────────────
+   60% Primary   = Alabaster Off-White (#FDFDFB) — body, canvas background, inner score disc
+   30% Secondary = Soft Ivory Sand (#FAF9F6) — header, info rows, dividers, muted text
+   10% Accent    = Indigo (#4F46E5) — primary buttons, top accent stripe, score ring
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* Register score property for animatable conic-gradient ring */
+@property --score-pct {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+/* ── 10% Accent — stripe at popup top ─────────────────────── */
+body::before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--c-primary), var(--ink-400));
+  flex-shrink: 0;
+}
+
+/* ── 30% Secondary — header depth ─────────────────────────── */
+.s1-header {
+  background: linear-gradient(180deg, var(--ink-50) 0%, var(--c-surface-alt) 100%);
+}
+
+.s1-divider,
+.s3-divider {
+  background: var(--c-border); /* Solid, crisp high-fidelity brutalist line */
+}
+
+/* ── 10% Accent — button depth (indigo-tinted shadows) ────── */
+
+/* Glossy diagonal sheen sweep — motion preferred only */
+.s1-btn,
+.s3-download-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .s1-btn::after,
+  .s3-download-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -150%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.2) 50%,
+      transparent 100%
+    );
+    transform: skewX(-20deg);
+    transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .s1-btn:hover:not(:disabled)::after,
+  .s3-download-btn:hover:not(:disabled)::after {
+    left: 150%;
+  }
+}
+
+/* ── 10% Accent — circular progress ring ──────────────────── */
+.s3-score-icon {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(24, 24, 22, 0.04); /* Subtly desaturated shadow */
+  background: var(--c-bg);
+}
+
+.s3-score-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 56px;
+  height: 56px;
+  pointer-events: none;
+}
+
+.s3-score-ring__progress {
+  stroke-dashoffset: calc(153.94 - (var(--score-pct, 0) / 100) * 153.94);
+  transition: stroke-dashoffset 800ms var(--ease-out);
+}
+
+/* Score number above ring */
+.s3-score-number {
+  position: absolute; /* Centered precisely */
+  z-index: 1;
+  font-size: var(--fs-16);
+  letter-spacing: -0.02em;
+}
+
+/* Ring color follows grade (W3C status affinity in flat brutalism) */
+.s3-score-icon[data-grade="excellent"] {
+  --score-color: var(--c-pass);
+}
+.s3-score-icon[data-grade="good"]      {
+  --score-color: var(--c-primary);
+}
+.s3-score-icon[data-grade="needs-work"] {
+  --score-color: var(--c-warning);
+}
+.s3-score-icon[data-grade="poor"]      {
+  --score-color: var(--c-critical);
+}
+
+/* ── 30% Secondary — tags baseline ────────────────────────── */
+.s3-tag {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Premium Error State Styling — 100% Popup Design Lang Compliant ─ */
+.loading-error-view {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.s2-error-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--sp-6) var(--gutter) var(--sp-5); /* 24px top, 16px sides, 20px bottom */
+  gap: var(--sp-3); /* 12px */
+}
+
+.s2-error-icon-box {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-critical-bg);
+  color: var(--c-critical);
+  border: 1.5px solid var(--c-primary);
+  border-radius: 50%;
+  font-size: var(--fs-24);
+  box-shadow: 2px 2px 0px var(--c-primary);
+}
+
+.s2-error-icon-box.warning-icon {
+  background: var(--c-warning-bg);
+  color: var(--c-warning);
+}
+
+.s2-error-title {
+  font-family: var(--font-sans);
+  font-size: var(--fs-18);
+  font-weight: 700;
+  color: var(--c-text);
+  letter-spacing: -0.02em;
+}
+
+.s2-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--c-border);
+  flex-shrink: 0;
+}
+
+.s2-error-body {
+  padding: var(--sp-4) var(--gutter);
+  flex-shrink: 0;
+}
+
+.s2-error-card {
+  background: var(--c-surface-alt);
+  border-radius: var(--r-8);
+  border: 1px solid var(--c-border);
+  padding: var(--sp-4);
+  box-shadow: inset 1px 1px 0px rgba(24, 24, 22, 0.02);
+}
+
+.s2-error-desc {
+  font-family: var(--font-sans);
+  font-size: var(--fs-13);
+  color: var(--c-text-secondary);
+  line-height: 1.55;
+  text-align: center;
+}
+
+.s2-error-actions {
+  padding: var(--sp-4) var(--gutter);
+  flex-shrink: 0;
+}

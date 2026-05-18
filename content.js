@@ -1,0 +1,944 @@
+// ============================================================
+// A11y Analyzer — Content Script (Analysis Engine)
+// Injected into the active tab. Runs all checks, sends
+// progress + results back to popup.js via chrome.runtime.
+// ============================================================
+
+(function () {
+  "use strict";
+
+  // ── Helpers ─────────────────────────────────────────────
+
+  function getSelector(el) {
+    if (!el) return "unknown";
+    if (el.id) return `#${el.id}`;
+    const tag = el.tagName.toLowerCase();
+    const cls = [...el.classList].slice(0, 2).join(".");
+    const text = el.textContent?.trim().slice(0, 30);
+    if (cls) return `${tag}.${cls}`;
+    if (text) return `${tag} "${text}"`;
+    return tag;
+  }
+
+  function getAccessibleName(el) {
+    if (!el || isHiddenFromAT(el)) return null;
+    if (el.getAttribute("aria-label")?.trim()) {
+      return el.getAttribute("aria-label").trim();
+    }
+    const labelledby = el.getAttribute("aria-labelledby");
+    if (labelledby) {
+      const ids = labelledby.split(/\s+/);
+      const parts = ids.map(id => document.getElementById(id)?.textContent?.trim()).filter(Boolean);
+      if (parts.length > 0) return parts.join(" ");
+    }
+    
+    // Title attribute
+    if (el.getAttribute("title")?.trim()) {
+      return el.getAttribute("title").trim();
+    }
+    
+    // Alt attribute
+    if (el.getAttribute("alt")?.trim()) {
+      return el.getAttribute("alt").trim();
+    }
+    
+    // Recursive Child Evaluation for nested graphics/elements
+    let text = "";
+    if (el.childNodes && el.childNodes.length > 0) {
+      for (const child of el.childNodes) {
+        if (child.nodeType === Node.TEXT_NODE) {
+          text += child.textContent;
+        } else if (child.nodeType === Node.ELEMENT_NODE) {
+          if (isHiddenFromAT(child)) continue;
+          if (child.tagName.toLowerCase() === "img") {
+            text += " " + (child.getAttribute("alt") || child.getAttribute("title") || "");
+          } else if (child.tagName.toLowerCase() === "svg") {
+            text += " " + (child.querySelector("title")?.textContent || child.getAttribute("aria-label") || "");
+          } else {
+            text += " " + getAccessibleName(child);
+          }
+        }
+      }
+    } else {
+      text = el.textContent || "";
+    }
+    
+    text = text.trim();
+    if (text) return text;
+    
+    // Placeholder attribute (as fallback)
+    if (el.getAttribute("placeholder")?.trim()) {
+      return el.getAttribute("placeholder").trim();
+    }
+    return null;
+  }
+
+  function isFocusable(el) {
+    if (el.disabled) return false;
+    const tabindex = el.getAttribute("tabindex");
+    if (tabindex !== null && parseInt(tabindex) < 0) return false;
+    const nativelyFocusable = ["a[href]", "button", "input", "select", "textarea", "[tabindex]"];
+    return nativelyFocusable.some((sel) => el.matches(sel));
+  }
+
+  function isHiddenFromAT(el) {
+    let node = el;
+    while (node && node !== document.body) {
+      if (node.getAttribute("aria-hidden") === "true") return true;
+      if (getComputedStyle(node).display === "none") return true;
+      if (getComputedStyle(node).visibility === "hidden") return true;
+      node = node.parentElement;
+    }
+    return false;
+  }
+
+  // ── Contrast Helpers ─────────────────────────────────────
+  function getLuminance(r, g, b) {
+    const a = [r, g, b].map(v => {
+      v /= 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+  }
+
+  function getContrastRatio(rgb1, rgb2) {
+    const l1 = getLuminance(rgb1[0], rgb1[1], rgb1[2]);
+    const l2 = getLuminance(rgb2[0], rgb2[1], rgb2[2]);
+    return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+  }
+
+  function getElementBgColor(el) {
+    let node = el;
+    while (node) {
+      const bg = getComputedStyle(node).backgroundColor;
+      if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
+        const match = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+        if (match) return [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])];
+      }
+      node = node.parentElement;
+    }
+    return [255, 255, 255]; // default fallback
+  }
+
+  // ── Checks ───────────────────────────────────────────────
+
+  // 1. Landmark Regions (weight 15)
+  function checkLandmarks() {
+    const issues = [];
+    const landmarks = {
+      main: document.querySelectorAll("main, [role='main']"),
+      nav: document.querySelectorAll("nav, [role='navigation']"),
+      header: document.querySelectorAll("header, [role='banner']"),
+      footer: document.querySelectorAll("footer, [role='contentinfo']"),
+      aside: document.querySelectorAll("aside, [role='complementary']"),
+      section: document.querySelectorAll("section, [role='region']"),
+    };
+
+    let score = 100;
+    let deductions = 0;
+
+    if (landmarks.main.length === 0) {
+      issues.push({ severity: "critical", message: "No <main> landmark found. Screen readers use this to skip directly to main content.", wcag: "1.3.6", element: "<body>" });
+      deductions += 30;
+    }
+    if (landmarks.main.length > 1) {
+      issues.push({ severity: "warning", message: `Multiple <main> landmarks (${landmarks.main.length}) found. Only one main landmark should exist per page.`, wcag: "1.3.6", element: "main" });
+      deductions += 10;
+    }
+    if (landmarks.nav.length === 0) {
+      issues.push({ severity: "warning", message: "No <nav> landmark found. Navigation regions help keyboard users orient on the page.", wcag: "1.3.6", element: "<body>" });
+      deductions += 15;
+    }
+    if (landmarks.nav.length > 1) {
+      landmarks.nav.forEach((nav) => {
+        const label = nav.getAttribute("aria-label") || nav.getAttribute("aria-labelledby");
+        if (!label) {
+          issues.push({ severity: "warning", message: "Multiple <nav> elements found but not all are labeled. Add 'aria-label' or 'aria-labelledby' to distinguish them.", wcag: "1.3.6", element: getSelector(nav) });
+          deductions += 8;
+        }
+      });
+    }
+    if (landmarks.header.length === 0) {
+      issues.push({ severity: "info", message: "No <header> (banner) landmark found. Landmark regions aid navigation.", wcag: "1.3.6", element: "<body>" });
+      deductions += 5;
+    }
+    if (landmarks.footer.length === 0) {
+      issues.push({ severity: "info", message: "No <footer> (contentinfo) landmark found.", wcag: "1.3.6", element: "<body>" });
+      deductions += 5;
+    }
+
+    // Check for nested structural landmarks which confuse screen readers (e.g. main inside main)
+    landmarks.main.forEach((main) => {
+      if (main.querySelector("main, [role='main']")) {
+        issues.push({ severity: "warning", message: "Nested <main> landmark detected. Landmark regions should not be nested within landmarks of the same type.", wcag: "1.3.6", element: getSelector(main) });
+        deductions += 10;
+      }
+    });
+
+    // Orphan Content Detector (WCAG 1.3.1)
+    const contentElements = Array.from(document.querySelectorAll("p, table, ul, ol, h1, h2, h3, h4, h5, h6, article, [role='article']"));
+    let orphanCount = 0;
+    
+    contentElements.forEach((el) => {
+      if (isHiddenFromAT(el)) return;
+      const text = el.textContent?.trim();
+      if (!text || text.length < 5) return;
+      
+      const insideLandmark = el.closest("main, [role='main'], nav, [role='navigation'], header, [role='banner'], footer, [role='contentinfo'], aside, [role='complementary'], section, [role='region'], form, [role='form']");
+      if (!insideLandmark) {
+        orphanCount++;
+        if (orphanCount <= 5) { // Cap at 5 issues to prevent spamming
+          issues.push({ severity: "info", message: "Orphan content detected. Element is placed outside of any navigational landmark regions.", wcag: "1.3.1", element: getSelector(el) });
+          deductions += 3;
+        }
+      }
+    });
+
+    score = Math.max(0, 100 - deductions);
+    return { score, issues, found: { main: landmarks.main.length, nav: landmarks.nav.length, header: landmarks.header.length, footer: landmarks.footer.length, aside: landmarks.aside.length, section: landmarks.section.length } };
+  }
+
+  // 2. ARIA Attributes (weight 20)
+  const VALID_ROLES = new Set(["alert","alertdialog","application","article","banner","button","cell","checkbox","columnheader","combobox","complementary","contentinfo","definition","dialog","directory","document","feed","figure","form","grid","gridcell","group","heading","img","link","list","listbox","listitem","log","main","marquee","math","menu","menubar","menuitem","menuitemcheckbox","menuitemradio","navigation","none","note","option","presentation","progressbar","radio","radiogroup","region","row","rowgroup","rowheader","scrollbar","search","searchbox","separator","slider","spinbutton","status","switch","tab","table","tablist","tabpanel","term","textbox","timer","toolbar","tooltip","tree","treegrid","treeitem"]);
+
+  function checkARIA() {
+    const issues = [];
+    let score = 100;
+    let deductions = 0;
+    const counts = { invalidRoles: 0, missingNames: 0, hiddenFocusable: 0, missingRequired: 0, brokenReferences: 0, duplicateIds: 0 };
+
+    // 1. Duplicate IDs
+    const idMap = new Map();
+    document.querySelectorAll("[id]").forEach((el) => {
+      const id = el.getAttribute("id").trim();
+      if (id) {
+        if (idMap.has(id)) {
+          idMap.get(id).push(el);
+        } else {
+          idMap.set(id, [el]);
+        }
+      }
+    });
+    for (const [id, els] of idMap.entries()) {
+      if (els.length > 1) {
+        counts.duplicateIds++;
+        issues.push({ severity: "critical", message: `Duplicate ID "${id}" found in DOM. This breaks aria references and form labels.`, wcag: "4.1.1", element: `#${id} (${els.length} instances)` });
+        deductions += 10;
+      }
+    }
+
+    // 2. Invalid roles
+    document.querySelectorAll("[role]").forEach((el) => {
+      const roles = el.getAttribute("role").split(" ").map((r) => r.trim());
+      roles.forEach((role) => {
+        if (!VALID_ROLES.has(role)) {
+          counts.invalidRoles++;
+          issues.push({ severity: "critical", message: `Invalid ARIA role: "${role}"`, wcag: "4.1.2", element: getSelector(el) });
+          deductions += 8;
+        }
+      });
+    });
+
+    // 3. aria-hidden on focusable elements
+    document.querySelectorAll("[aria-hidden='true']").forEach((el) => {
+      const focusable = el.querySelectorAll("a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])");
+      if (focusable.length > 0) {
+        counts.hiddenFocusable++;
+        issues.push({ severity: "critical", message: "aria-hidden='true' is set on an element containing focusable children. Sighted keyboard users can reach them but they are hidden from screen readers.", wcag: "1.3.1", element: getSelector(el) });
+        deductions += 12;
+      }
+    });
+
+    // 4. Interactive elements missing accessible names (excluding those in aria-hidden)
+    document.querySelectorAll("button, a[href], [role='button'], [role='link']").forEach((el) => {
+      if (isHiddenFromAT(el)) return;
+      const name = getAccessibleName(el);
+      if (!name || name.trim().length === 0) {
+        counts.missingNames++;
+        issues.push({ severity: "critical", message: `Interactive element has no accessible name. Screen readers will read the tag or filename.`, wcag: "4.1.2", element: getSelector(el) });
+        deductions += 10;
+      }
+    });
+
+    // 5. Broken ID references
+    const refAttrs = ["aria-labelledby", "aria-describedby", "aria-controls", "aria-owns"];
+    refAttrs.forEach((attr) => {
+      document.querySelectorAll(`[${attr}]`).forEach((el) => {
+        const val = el.getAttribute(attr).split(/\s+/);
+        val.forEach((refId) => {
+          if (refId && !document.getElementById(refId)) {
+            counts.brokenReferences++;
+            issues.push({ severity: "warning", message: `Attribute "${attr}" references non-existent ID "${refId}".`, wcag: "1.3.1", element: getSelector(el) });
+            deductions += 6;
+          }
+        });
+      });
+    });
+
+    // 6. Typo check in ARIA attribute names
+    document.querySelectorAll("*").forEach(el => {
+      for (let i = 0; i < el.attributes.length; i++) {
+        const name = el.attributes[i].name;
+        if (name.startsWith("aria-")) {
+          if (name === "aria-labeledby") {
+            issues.push({ severity: "critical", message: "Typo found in aria attribute: did you mean 'aria-labelledby' with two 'l's?", wcag: "4.1.2", element: getSelector(el) });
+            deductions += 8;
+          }
+        }
+      }
+    });
+
+    // 7. aria-required roles missing required attributes
+    const roleRequirements = {
+      checkbox: ["aria-checked"],
+      radio: ["aria-checked"],
+      slider: ["aria-valuenow", "aria-valuemin", "aria-valuemax"],
+      scrollbar: ["aria-valuenow", "aria-valuemin", "aria-valuemax"],
+      combobox: ["aria-expanded"],
+    };
+    document.querySelectorAll("[role]").forEach((el) => {
+      const role = el.getAttribute("role");
+      const required = roleRequirements[role];
+      if (required) {
+        required.forEach((attr) => {
+          if (!el.hasAttribute(attr)) {
+            counts.missingRequired++;
+            issues.push({ severity: "warning", message: `Role "${role}" is missing required attribute "${attr}".`, wcag: "4.1.2", element: getSelector(el) });
+            deductions += 5;
+          }
+        });
+      }
+    });
+
+    // 8. Tab & Tablist interactive state checks
+    document.querySelectorAll("[role='tablist']").forEach((tablist) => {
+      const tabs = tablist.querySelectorAll("[role='tab']");
+      if (tabs.length === 0) {
+        issues.push({ severity: "warning", message: "Element with role='tablist' contains no children with role='tab'. A tablist must group actual tabs.", wcag: "1.3.1", element: getSelector(tablist) });
+        deductions += 6;
+      }
+    });
+
+    document.querySelectorAll("[role='tab']").forEach((tab) => {
+      if (!tab.hasAttribute("aria-selected")) {
+        issues.push({ severity: "warning", message: "Element with role='tab' is missing 'aria-selected' attribute to convey its active state.", wcag: "4.1.2", element: getSelector(tab) });
+        deductions += 5;
+      }
+      if (!tab.closest("[role='tablist']")) {
+        issues.push({ severity: "info", message: "Element with role='tab' is not grouped inside a parent role='tablist' element.", wcag: "1.3.1", element: getSelector(tab) });
+        deductions += 2;
+      }
+    });
+
+    // 9. Presentational Role Conflict (WCAG 4.1.2)
+    document.querySelectorAll("[role='presentation'], [role='none']").forEach((el) => {
+      if (isFocusable(el)) {
+        issues.push({ severity: "critical", message: "Presentational role conflict. Element has role='presentation' or 'none' but is still keyboard focusable.", wcag: "4.1.2", element: getSelector(el) });
+        deductions += 8;
+      }
+    });
+
+    // 10. Broken Active Descendant (WCAG 1.3.1)
+    document.querySelectorAll("[aria-activedescendant]").forEach((el) => {
+      const refId = el.getAttribute("aria-activedescendant")?.trim();
+      if (refId && !document.getElementById(refId)) {
+        issues.push({ severity: "warning", message: `Attribute "aria-activedescendant" references non-existent ID "${refId}".`, wcag: "1.3.1", element: getSelector(el) });
+        deductions += 6;
+      }
+    });
+
+    score = Math.max(0, 100 - deductions);
+    return { score, issues, counts };
+  }
+
+  // 3. Images & Media (weight 15)
+  function checkImages() {
+    const issues = [];
+    let score = 100;
+    let deductions = 0;
+    const counts = { total: 0, missingAlt: 0, emptyAlt: 0, suspiciousAlt: 0, redundantAlt: 0 };
+
+    const suspiciousPatterns = [/\.(jpe?g|png|gif|webp|svg|bmp)$/i, /^image\s*\d*$/i, /^img\s*\d*$/i, /^photo$/i, /^picture$/i, /^banner$/i, /^logo$/i];
+    const redundantWords = ["image of", "photo of", "graphic of", "picture of", "logo of", "icon of"];
+
+    const imgList = Array.from(document.querySelectorAll("img"));
+    imgList.forEach((img, index) => {
+      counts.total++;
+      if (!img.hasAttribute("alt")) {
+        counts.missingAlt++;
+        issues.push({ severity: "critical", message: "Image is missing alt attribute entirely. Screen readers will read the filename.", wcag: "1.1.1", element: getSelector(img) });
+        deductions += 10;
+      } else {
+        const rawAlt = img.getAttribute("alt");
+        const altText = rawAlt.trim();
+        
+        // Check for whitespace-only or single punctuation disguised empty alt
+        if (rawAlt !== "" && (altText === "" || altText === "." || altText === "-" || altText === "_")) {
+          counts.missingAlt++;
+          issues.push({ severity: "critical", message: "Image alt attribute contains only placeholder spaces or punctuation characters. Treat as missing alt.", wcag: "1.1.1", element: getSelector(img) });
+          deductions += 10;
+        } else if (altText === "") {
+          const isDecorativeContext = img.closest("[aria-hidden='true']") || img.getAttribute("role") === "presentation";
+          if (!isDecorativeContext && (img.width > 100 || img.height > 100)) {
+            counts.emptyAlt++;
+            issues.push({ severity: "warning", message: "Image has empty alt text. Meaningful elements should have a description; empty alt is only for decorative images.", wcag: "1.1.1", element: getSelector(img) });
+            deductions += 4;
+          }
+        } else {
+          if (suspiciousPatterns.some((p) => p.test(altText))) {
+            counts.suspiciousAlt++;
+            issues.push({ severity: "warning", message: `Alt text "${altText}" appears to be a filename or generic tag rather than a description.`, wcag: "1.1.1", element: getSelector(img) });
+            deductions += 6;
+          }
+          if (redundantWords.some((word) => altText.toLowerCase().startsWith(word))) {
+            counts.redundantAlt++;
+            issues.push({ severity: "info", message: `Alt text contains redundant phrase: "${altText}". Screen readers already announce the element as an image.`, wcag: "1.1.1", element: getSelector(img) });
+            deductions += 3;
+          }
+          
+          // Check for adjacent duplicate alt text (echo check)
+          if (index > 0) {
+            const prevImg = imgList[index - 1];
+            if (prevImg.hasAttribute("alt") && prevImg.getAttribute("alt").trim() === altText && !isHiddenFromAT(prevImg)) {
+              issues.push({ severity: "info", message: `Adjacent images have identical alt text: "${altText}". This duplicates screen reader announcements.`, wcag: "1.1.1", element: getSelector(img) });
+              deductions += 2;
+            }
+          }
+        }
+      }
+    });
+
+    // SVGs without accessible names
+    document.querySelectorAll("svg").forEach((svg) => {
+      if (isHiddenFromAT(svg)) return;
+      if (svg.getAttribute("role") === "presentation" || svg.getAttribute("aria-hidden") === "true") return;
+      const hasTitle = svg.querySelector("title");
+      const hasAriaLabel = svg.getAttribute("aria-label") || svg.getAttribute("aria-labelledby");
+      if (!hasTitle && !hasAriaLabel) {
+        issues.push({ severity: "info", message: "SVG element has no accessible name (no <title> child or aria-label). Add one if this conveys meaning.", wcag: "1.1.1", element: getSelector(svg) });
+        deductions += 3;
+      }
+    });
+
+    // Video and Audio tags (WCAG 1.2 Captions / Subtitles)
+    document.querySelectorAll("video").forEach((video) => {
+      if (isHiddenFromAT(video)) return;
+      const tracks = video.querySelectorAll("track[kind='captions'], track[kind='subtitles']");
+      if (tracks.length === 0) {
+        issues.push({ severity: "warning", message: "Video element is missing standard captions or subtitles tracks. Deaf or hard-of-hearing users cannot consume this media.", wcag: "1.2.2", element: getSelector(video) });
+        deductions += 10;
+      }
+    });
+
+    document.querySelectorAll("audio").forEach((audio) => {
+      if (isHiddenFromAT(audio)) return;
+      const tracks = audio.querySelectorAll("track[kind='captions'], track[kind='subtitles']");
+      if (tracks.length === 0 && !audio.getAttribute("aria-describedby")) {
+        issues.push({ severity: "info", message: "Audio element lacks caption tracks or associated text transcripts.", wcag: "1.2.1", element: getSelector(audio) });
+        deductions += 4;
+      }
+    });
+
+    // CSS Background Banners alternative text check (WCAG 1.1.1)
+    const allElements = document.querySelectorAll("div, section, header, a, [role='banner']");
+    let bgImageIssueCount = 0;
+    allElements.forEach((el) => {
+      if (isHiddenFromAT(el)) return;
+      
+      const style = getComputedStyle(el);
+      const bgImg = style.backgroundImage;
+      if (bgImg && bgImg !== "none" && bgImg.includes("url(")) {
+        const rect = el.getBoundingClientRect();
+        if (rect.width > 150 && rect.height > 150) {
+          const hasDesc = el.getAttribute("aria-label") || el.getAttribute("aria-labelledby") || el.getAttribute("title") || el.textContent?.trim();
+          if (!hasDesc) {
+            bgImageIssueCount++;
+            if (bgImageIssueCount <= 5) {
+              issues.push({ severity: "info", message: "CSS Background Image lacks alternative text. Large graphic containers styled with background images should contain accessible text descriptions.", wcag: "1.1.1", element: getSelector(el) });
+              deductions += 4;
+            }
+          }
+        }
+      }
+    });
+
+    score = Math.max(0, 100 - deductions);
+    return { score, issues, counts };
+  }
+
+  // 4. Forms (weight 15)
+  function checkForms() {
+    const issues = [];
+    let score = 100;
+    let deductions = 0;
+    const counts = { inputs: 0, unlabeled: 0, missingRequired: 0, ungrouped: 0, missingSubmit: 0 };
+
+    document.querySelectorAll("input:not([type='hidden']), select, textarea").forEach((input) => {
+      if (isHiddenFromAT(input)) return;
+      counts.inputs++;
+
+      // Check for associated label
+      const id = input.getAttribute("id");
+      const label = id ? document.querySelector(`label[for='${id}']`) : null;
+      const ariaLabel = input.getAttribute("aria-label");
+      const ariaLabelledby = input.getAttribute("aria-labelledby");
+      const wrappingLabel = input.closest("label");
+      const placeholder = input.getAttribute("placeholder");
+
+      if (!label && !ariaLabel && !ariaLabelledby && !wrappingLabel) {
+        counts.unlabeled++;
+        if (placeholder) {
+          issues.push({ severity: "warning", message: `Input uses only placeholder as a label. Placeholders vanish on focus and are not reliably read by screen readers.`, wcag: "1.3.1", element: getSelector(input) });
+          deductions += 6;
+        } else {
+          issues.push({ severity: "critical", message: `Form control has no associated label. Screen readers cannot identify this field's purpose.`, wcag: "1.3.1", element: getSelector(input) });
+          deductions += 12;
+        }
+      }
+
+      // Check for duplicate labels pointing to the same element ID
+      if (id) {
+        const labels = document.querySelectorAll(`label[for='${id}']`);
+        if (labels.length > 1) {
+          issues.push({ severity: "info", message: `Multiple label elements point to the same input ID "${id}". Use a single label element instead.`, wcag: "1.3.1", element: getSelector(input) });
+          deductions += 2;
+        }
+      }
+
+      // Required fields
+      if (input.required || input.getAttribute("aria-required") === "true") {
+        const hasRequiredIndicator = input.getAttribute("aria-required") === "true";
+        if (!hasRequiredIndicator) {
+          counts.missingRequired++;
+          issues.push({ severity: "warning", message: "Required field uses HTML 'required' attribute but not 'aria-required=\"true\"'. Older screen readers might miss it.", wcag: "3.3.2", element: getSelector(input) });
+          deductions += 4;
+        }
+      }
+
+      // Autocomplete token check (WCAG 1.3.5)
+      const sensitiveKeys = ["email", "mail", "password", "pass", "username", "uname", "phone", "tel", "zip", "postal", "address", "addr"];
+      const attrName = (input.getAttribute("name") || "").toLowerCase();
+      const attrId = (input.getAttribute("id") || "").toLowerCase();
+      const isSensitive = sensitiveKeys.some(k => attrName.includes(k) || attrId.includes(k));
+      if (isSensitive) {
+        const hasAutocomplete = input.hasAttribute("autocomplete") && input.getAttribute("autocomplete").trim() !== "";
+        if (!hasAutocomplete) {
+          issues.push({ severity: "info", message: "Autocomplete missing on personal identify field. Adding appropriate autocomplete tokens assists cognitive-disability and motor-impaired users.", wcag: "1.3.5", element: getSelector(input) });
+          deductions += 3;
+        }
+      }
+    });
+
+    // Check for submit button in forms
+    document.querySelectorAll("form").forEach((form) => {
+      const submitBtn = form.querySelector("button[type='submit'], input[type='submit']");
+      if (!submitBtn) {
+        counts.missingSubmit++;
+        issues.push({ severity: "warning", message: "Form has no submit button. Standard submit buttons are crucial for native keyboard form submission.", wcag: "2.1.1", element: getSelector(form) });
+        deductions += 8;
+      }
+    });
+
+    // Fieldsets for radio/checkbox groups
+    document.querySelectorAll("input[type='radio'], input[type='checkbox']").forEach((input) => {
+      if (!input.closest("fieldset")) {
+        counts.ungrouped++;
+        issues.push({ severity: "warning", message: `${input.type} input is not inside a <fieldset> group. Groups of interactive controls need a container and legend label.`, wcag: "1.3.1", element: getSelector(input) });
+        deductions += 5;
+      }
+    });
+
+    score = Math.max(0, 100 - deductions);
+    return { score, issues, counts };
+  }
+
+  // 5. Keyboard Navigation (weight 20)
+  function checkKeyboard() {
+    const issues = [];
+    let score = 100;
+    let deductions = 0;
+    const counts = { positiveTabindex: 0, skipLinks: 0, nonNativeInteractive: 0, missingFocusStyle: 0 };
+
+    // Positive tabindex — disrupts natural focus order
+    document.querySelectorAll("[tabindex]").forEach((el) => {
+      const val = parseInt(el.getAttribute("tabindex"), 10);
+      if (val > 0) {
+        counts.positiveTabindex++;
+        issues.push({ severity: "warning", message: `tabindex="${val}" disrupts natural focus order. Use 0 for focusable elements, or -1 to manage dynamically.`, wcag: "2.4.3", element: getSelector(el) });
+        deductions += 8;
+      }
+    });
+
+    // Skip links
+    const firstLinks = Array.from(document.querySelectorAll("a[href]")).slice(0, 5);
+    const hasSkipLink = firstLinks.some((a) => {
+      const href = a.getAttribute("href") || "";
+      const text = a.textContent?.toLowerCase() || "";
+      return href.startsWith("#") && (text.includes("skip") || text.includes("jump") || text.includes("main"));
+    });
+    if (hasSkipLink) {
+      counts.skipLinks = 1;
+    } else {
+      issues.push({ severity: "warning", message: "No skip navigation link found. Keyboard users must tab through all navigation elements repeatedly.", wcag: "2.4.1", element: "<body>" });
+      deductions += 15;
+    }
+
+    // Non-native interactive elements without keyboard support
+    document.querySelectorAll("[onclick]:not(a):not(button):not(input):not(select):not(textarea), [role='button']:not(button), [role='link']:not(a)").forEach((el) => {
+      if (isHiddenFromAT(el)) return;
+      const tabindex = el.getAttribute("tabindex");
+      if (tabindex === null || parseInt(tabindex) < 0) {
+        counts.nonNativeInteractive++;
+        issues.push({ severity: "critical", message: "Non-native interactive element lacks keyboard support. Add tabindex=\"0\" and keydown/keyup event listeners.", wcag: "2.1.1", element: getSelector(el) });
+        deductions += 10;
+      }
+    });
+
+    // Focus style check (heuristic — checks if BOTH outline and box-shadow are absent)
+    const allFocusable = document.querySelectorAll("a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex='0']");
+    let noOutlineCount = 0;
+    const sample = Array.from(allFocusable).slice(0, 20);
+    sample.forEach((el) => {
+      const style = getComputedStyle(el);
+      const outline = style.outlineWidth;
+      const outlineStyle = style.outlineStyle;
+      const boxShadow = style.boxShadow;
+      const hasNoOutline = outlineStyle === "none" || outline === "0px";
+      const hasNoBoxShadow = !boxShadow || boxShadow === "none" || boxShadow.includes("0px 0px 0px") || boxShadow === "0px 0px 0px 0px rgb(0, 0, 0)";
+      if (hasNoOutline && hasNoBoxShadow) {
+        noOutlineCount++;
+      }
+    });
+    if (noOutlineCount > sample.length * 0.5 && sample.length > 0) {
+      counts.missingFocusStyle = noOutlineCount;
+      issues.push({ severity: "critical", message: `${noOutlineCount} of ${sample.length} sampled focusable elements have no focus styling (outline and box-shadow removed). This makes keyboard navigation invisible.`, wcag: "2.4.7", element: "Global CSS" });
+      deductions += 20;
+    }
+
+    // Duplicate Accesskey Check (WCAG 2.4.1)
+    const accesskeys = document.querySelectorAll("[accesskey]");
+    const keyMap = new Map();
+    accesskeys.forEach((el) => {
+      const key = el.getAttribute("accesskey").trim().toLowerCase();
+      if (key) {
+        if (keyMap.has(key)) {
+          keyMap.get(key).push(el);
+        } else {
+          keyMap.set(key, [el]);
+        }
+      }
+    });
+    keyMap.forEach((elements, key) => {
+      if (elements.length > 1) {
+        issues.push({ severity: "warning", message: `Duplicate accesskey attribute value "${key}" is defined across multiple elements, causing keyboard shortcuts collision.`, wcag: "2.4.1", element: getSelector(elements[0]) });
+        deductions += 5;
+      }
+    });
+
+    // Pointer Events Keyboard Conflict (WCAG 2.1.1)
+    const focusableEls = document.querySelectorAll("a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex='0']");
+    let pointerEventsIssueCount = 0;
+    focusableEls.forEach((el) => {
+      if (isHiddenFromAT(el)) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        const style = getComputedStyle(el);
+        if (style.pointerEvents === "none") {
+          pointerEventsIssueCount++;
+          if (pointerEventsIssueCount <= 5) {
+            issues.push({ severity: "warning", message: "Pointer events conflict. Focusable element is in keyboard tab order but styled with CSS pointer-events: none, blocking pointer interaction.", wcag: "2.1.1", element: getSelector(el) });
+            deductions += 5;
+          }
+        }
+      }
+    });
+
+    score = Math.max(0, 100 - deductions);
+    return { score, issues, counts };
+  }
+
+  // 6. Heading Structure (weight 10)
+  function checkHeadings() {
+    const issues = [];
+    let score = 100;
+    let deductions = 0;
+
+    const headings = Array.from(document.querySelectorAll("h1, h2, h3, h4, h5, h6"));
+    const levels = headings.map((h) => parseInt(h.tagName[1]));
+
+    if (headings.length === 0) {
+      issues.push({ severity: "critical", message: "No headings found. Headings structure page segments for quick navigational jumps.", wcag: "1.3.1", element: "<body>" });
+      return { score: 0, issues, counts: { total: 0, h1Count: 0, skippedLevels: 0 } };
+    }
+
+    const h1s = headings.filter((h) => h.tagName === "H1");
+    if (h1s.length === 0) {
+      issues.push({ severity: "critical", message: "No <h1> found. Every page must contain exactly one <h1> representing the main page topic.", wcag: "1.3.1", element: "<body>" });
+      deductions += 25;
+    } else if (h1s.length > 1) {
+      issues.push({ severity: "warning", message: `${h1s.length} <h1> elements found. Keep exactly one per page for clean indexing.`, wcag: "1.3.1", element: "h1" });
+      deductions += 12;
+    }
+
+    // Check if the page starts with a nested heading (e.g. h3 or h4) before h1/h2
+    if (levels.length > 0 && levels[0] > 2) {
+      issues.push({ severity: "warning", message: `Page starts with a low-level heading: <h${levels[0]}>. Document outline should flow downward starting with h1 or h2.`, wcag: "1.3.1", element: getSelector(headings[0]) });
+      deductions += 8;
+    }
+
+    // Skipped levels
+    let skipped = 0;
+    for (let i = 1; i < levels.length; i++) {
+      if (levels[i] > levels[i - 1] + 1) {
+        skipped++;
+        issues.push({ severity: "warning", message: `Heading level jumps from <h${levels[i - 1]}> to <h${levels[i]}>, skipping levels. Breaks document hierarchy outline.`, wcag: "1.3.1", element: getSelector(headings[i]) });
+        deductions += 8;
+      }
+    }
+
+    // Empty headings and overly long headings
+    headings.forEach((h) => {
+      const text = getAccessibleName(h)?.trim() || "";
+      if (!text) {
+        issues.push({ severity: "critical", message: "Empty heading element. Screen readers will read structural level with no contents.", wcag: "1.3.1", element: getSelector(h) });
+        deductions += 10;
+      } else if (text.length > 150) {
+        issues.push({ severity: "warning", message: `Overly long heading text (${text.length} chars). Heading tags should be brief labels; do not use them to format full body text paragraphs.`, wcag: "1.3.1", element: getSelector(h) });
+        deductions += 6;
+      }
+    });
+
+    score = Math.max(0, 100 - deductions);
+    return { score, issues, counts: { total: headings.length, h1Count: h1s.length, skippedLevels: skipped } };
+  }
+
+  // 7. Links & Buttons (weight 5)
+  function checkLinksButtons() {
+    const issues = [];
+    let score = 100;
+    let deductions = 0;
+    const counts = { links: 0, buttons: 0, genericText: 0, newWindowUnmarked: 0, empty: 0, redundantLinks: 0, contrastFailures: 0 };
+    const genericPhrases = ["click here", "here", "read more", "more", "learn more", "this", "link", "button", "continue", "go"];
+
+    const linksList = Array.from(document.querySelectorAll("a[href]"));
+
+    linksList.forEach((a, index) => {
+      if (isHiddenFromAT(a)) return;
+      counts.links++;
+      const text = getAccessibleName(a)?.toLowerCase().trim() || "";
+      if (!text) {
+        counts.empty++;
+        issues.push({ severity: "critical", message: "Link has no accessible name. Screen readers will skip or read the URL string.", wcag: "2.4.4", element: getSelector(a) });
+        deductions += 10;
+      } else if (genericPhrases.includes(text)) {
+        counts.genericText++;
+        issues.push({ severity: "warning", message: `Link with generic text: "${text}". Out of context, this offers no clues about destination.`, wcag: "2.4.4", element: getSelector(a) });
+        deductions += 5;
+      }
+
+      if (a.getAttribute("target") === "_blank") {
+        const indicator = a.getAttribute("aria-label")?.includes("new") || a.querySelector("[aria-label]") || a.textContent?.toLowerCase().includes("new window");
+        if (!indicator) {
+          counts.newWindowUnmarked++;
+          issues.push({ severity: "info", message: `Link opens in a new tab (target="_blank") but lacks text/aria warnings.`, wcag: "3.2.2", element: getSelector(a) });
+          deductions += 3;
+        }
+      }
+
+      // Vague Anchor Traps (WCAG 2.4.4)
+      const hrefVal = (a.getAttribute("href") || "").trim().toLowerCase();
+      if (hrefVal === "#" || hrefVal.startsWith("javascript:")) {
+        const roleVal = a.getAttribute("role");
+        if (roleVal !== "button") {
+          issues.push({ severity: "warning", message: "Mock link behaves as an interactive action but lacks role='button' and proper button aesthetics.", wcag: "2.4.4", element: getSelector(a) });
+          deductions += 4;
+        }
+      }
+
+      if (a.getAttribute("role") === "button" && a.hasAttribute("href") && a.getAttribute("href") !== "#" && a.getAttribute("href") !== "javascript:void(0)") {
+        issues.push({ severity: "warning", message: "Element has both href and role='button'. This conflict confuses screen readers and search engines.", wcag: "4.1.2", element: getSelector(a) });
+        deductions += 4;
+      }
+
+      if (index > 0) {
+        const prev = linksList[index - 1];
+        const currentHref = a.getAttribute("href");
+        const prevHref = prev.getAttribute("href");
+        if (currentHref && prevHref && currentHref === prevHref && !isHiddenFromAT(prev)) {
+          counts.redundantLinks++;
+          issues.push({ severity: "info", message: `Adjacent links point to identical destination URL: "${currentHref}". Consider combining into one element.`, wcag: "2.4.4", element: getSelector(a) });
+          deductions += 2;
+        }
+      }
+    });
+
+    document.querySelectorAll("button").forEach((btn) => {
+      if (isHiddenFromAT(btn)) return;
+      counts.buttons++;
+      const text = getAccessibleName(btn)?.trim() || "";
+      if (!text) {
+        counts.empty++;
+        issues.push({ severity: "critical", message: "Button has no accessible text. Screen readers cannot tell what it does.", wcag: "4.1.2", element: getSelector(btn) });
+        deductions += 10;
+      }
+    });
+
+    // 8. Color Contrast Ratio Auditing (WCAG 1.4.3 - Minimum Contrast)
+    const textElements = Array.from(document.querySelectorAll("p, li, label, td, th, h1, h2, h3, h4, h5, h6, a[href], button"));
+    
+    // Sample up to 60 visible text elements to ensure high performance
+    const visibleTextElements = textElements.filter(el => {
+      if (isHiddenFromAT(el)) return false;
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    }).slice(0, 60);
+
+    visibleTextElements.forEach((el) => {
+      const style = getComputedStyle(el);
+      const color = style.color;
+      
+      const fgMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (fgMatch) {
+        const fgRgb = [parseInt(fgMatch[1]), parseInt(fgMatch[2]), parseInt(fgMatch[3])];
+        const bgRgb = getElementBgColor(el);
+        
+        const ratio = getContrastRatio(fgRgb, bgRgb);
+        
+        // Determine threshold based on size
+        const fontSizeStr = style.fontSize;
+        const fontSizePx = parseFloat(fontSizeStr);
+        const fontWeight = style.fontWeight;
+        const isBold = fontWeight === "bold" || parseInt(fontWeight, 10) >= 700;
+        
+        // WCAG Large text: >= 24px (18pt) or bold >= 18.5px (14pt)
+        const isLarge = fontSizePx >= 24 || (fontSizePx >= 18.5 && isBold);
+        const threshold = isLarge ? 3.0 : 4.5;
+        
+        if (ratio < threshold) {
+          counts.contrastFailures++;
+          const roundedRatio = Math.round(ratio * 100) / 100;
+          issues.push({
+            severity: ratio < 3.0 ? "critical" : "warning",
+            message: `Low text color contrast ratio (${roundedRatio}:1). Minimum required for this text size is ${threshold}:1. Check foreground ${color} on background rgb(${bgRgb.join(",")}).`,
+            wcag: "1.4.3",
+            element: getSelector(el)
+          });
+          deductions += ratio < 3.0 ? 8 : 4;
+        }
+      }
+    });
+
+    score = Math.max(0, 100 - deductions);
+    return { score, issues, counts };
+  }
+
+  // ── Page metadata ────────────────────────────────────────
+  function getPageMeta() {
+    const interactiveEls = document.querySelectorAll("a[href], button, input, select, textarea, [tabindex]:not([tabindex='-1']), [role='button'], [role='link']");
+    const images = document.querySelectorAll("img");
+    const langAttr = document.documentElement.getAttribute("lang");
+    const viewport = document.querySelector("meta[name='viewport']");
+
+    return {
+      title: document.title || "(no title)",
+      url: window.location.href,
+      domain: window.location.hostname,
+      lang: langAttr || null,
+      https: window.location.protocol === "https:",
+      viewport: !!viewport,
+      interactiveCount: interactiveEls.length,
+      imageCount: images.length,
+      headingCount: document.querySelectorAll("h1,h2,h3,h4,h5,h6").length,
+    };
+  }
+
+  // ── Main runner ──────────────────────────────────────────
+  async function runAnalysis(port) {
+    const steps = [
+      { id: "meta",     label: "Reading page metadata…",       pct: 5,  fn: getPageMeta },
+      { id: "landmarks",label: "Checking landmark regions…",   pct: 20, fn: checkLandmarks },
+      { id: "aria",     label: "Auditing ARIA attributes…",    pct: 38, fn: checkARIA },
+      { id: "images",   label: "Checking images & media…",     pct: 52, fn: checkImages },
+      { id: "forms",    label: "Analyzing form accessibility…", pct: 65, fn: checkForms },
+      { id: "keyboard", label: "Testing keyboard support…",    pct: 80, fn: checkKeyboard },
+      { id: "headings", label: "Auditing heading structure…",  pct: 90, fn: checkHeadings },
+      { id: "links",    label: "Checking links & buttons…",    pct: 98, fn: checkLinksButtons },
+    ];
+
+    const results = {};
+
+    for (const step of steps) {
+      try { port.postMessage({ type: "PROGRESS", step: step.id, label: step.label, pct: step.pct }); } catch (_) {}
+      await new Promise((r) => setTimeout(r, 280));
+      results[step.id] = step.fn();
+    }
+
+    // ── Weighted score calculation ──────────────────────────
+    const weights = { landmarks: 15, aria: 20, images: 15, forms: 15, keyboard: 20, headings: 10, links: 5 };
+    const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
+    const weightedScore = Object.entries(weights).reduce((acc, [key, w]) => {
+      return acc + (results[key]?.score ?? 100) * (w / totalWeight);
+    }, 0);
+
+    // ── Flatten all issues ──────────────────────────────────
+    const allIssues = [];
+    for (const [cat, data] of Object.entries(results)) {
+      if (cat === "meta") continue;
+      (data.issues || []).forEach((issue) => {
+        allIssues.push({ ...issue, category: cat });
+      });
+    }
+
+    const criticalCount = allIssues.filter((i) => i.severity === "critical").length;
+    const warningCount  = allIssues.filter((i) => i.severity === "warning").length;
+    const infoCount     = allIssues.filter((i) => i.severity === "info").length;
+
+    try {
+      port.postMessage({
+        type: "RESULT",
+        data: {
+          meta: results.meta,
+          scores: {
+            overall:   Math.round(weightedScore),
+            landmarks: results.landmarks.score,
+            aria:      results.aria.score,
+            images:    results.images.score,
+            forms:     results.forms.score,
+            keyboard:  results.keyboard.score,
+            headings:  results.headings.score,
+            links:     results.links.score,
+          },
+          issues: allIssues,
+          summary: { critical: criticalCount, warning: warningCount, info: infoCount, total: allIssues.length },
+          foundCounts: {
+            landmarks: results.landmarks.found,
+            images:    results.images.counts,
+            forms:     results.forms.counts,
+            keyboard:  results.keyboard.counts,
+            headings:  results.headings.counts,
+            links:     results.links.counts,
+          },
+        },
+      });
+    } catch (_) {}
+  }
+
+  // ── Port-based listener ───────────────────────────────────
+  // Using long-lived ports instead of runtime.sendMessage so
+  // messages reliably reach the popup without a service worker.
+  if (window.__a11yAnalyzerPort) {
+    try { window.__a11yAnalyzerPort.disconnect(); } catch (_) {}
+  }
+
+  chrome.runtime.onConnect.addListener(function onConnect(port) {
+    if (port.name !== "a11y-analysis") return;
+    window.__a11yAnalyzerPort = port;
+
+    port.onMessage.addListener((msg) => {
+      if (msg.type === "START_ANALYSIS") {
+        runAnalysis(port);
+      }
+    });
+  });
+
+})();

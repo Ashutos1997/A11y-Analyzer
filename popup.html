@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A11y Analyzer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Ubuntu+Condensed&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="phosphor/style.css" />
+  <link rel="stylesheet" href="popup.css" />
+  <link rel="stylesheet" href="animation.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SCREEN 1 — Site Info + Analyze
+  ════════════════════════════════════════════════════════ -->
+  <div id="screen-info" class="screen active" role="main" aria-label="Site information">
+
+    <header class="s1-header" role="banner">
+      <div class="s1-header__left">
+        <i class="ph ph-chart-polar s1-header__icon" aria-hidden="true"></i>
+        <span class="s1-header__title" id="header-title-s1">A11Y Analyzer</span>
+      </div>
+      <button class="header-lang-switch" data-lang="en" aria-label="Toggle language / 언어 전환">
+        <span class="lang-text lang-eng">ENG</span>
+        <span class="lang-divider">|</span>
+        <span class="lang-text lang-kor">KOR</span>
+      </button>
+    </header>
+
+    <!-- Site identity -->
+    <div class="s1-site">
+      <div class="s1-site__identity-row">
+        <div id="site-favicon-box" class="s1-site__favicon-box">
+          <img id="site-favicon" class="s1-site__favicon" src="" alt="" />
+        </div>
+        <p class="s1-site__domain" id="site-domain">Loading…</p>
+      </div>
+      <div class="s1-site__meta">
+        <i class="ph ph-globe-simple s1-site__icon" aria-hidden="true"></i>
+        <span class="s1-site__protocol" id="protocol-badge">HTTPS</span>
+      </div>
+    </div>
+
+    <!-- Divider top -->
+    <div class="s1-divider" aria-hidden="true"></div>
+
+    <!-- Info rows -->
+    <ul class="s1-info-list" role="list" aria-label="Page details">
+
+      <li class="s1-info-row" role="listitem">
+        <span class="s1-info-row__left">
+          <i class="ph ph-translate" aria-hidden="true"></i>
+          <span class="s1-info-row__label" id="info-label-lang">Language</span>
+        </span>
+        <span class="s1-info-row__value" id="info-lang">—</span>
+      </li>
+
+      <li class="s1-info-row" role="listitem">
+        <span class="s1-info-row__left">
+          <i class="ph ph-hand-pointing" aria-hidden="true"></i>
+          <span class="s1-info-row__label" id="info-label-interactive">Interactive</span>
+        </span>
+        <span class="s1-info-row__value" id="info-interactive">—</span>
+      </li>
+
+      <li class="s1-info-row" role="listitem">
+        <span class="s1-info-row__left">
+          <i class="ph ph-image" aria-hidden="true"></i>
+          <span class="s1-info-row__label" id="info-label-images">Images</span>
+        </span>
+        <span class="s1-info-row__value" id="info-images">—</span>
+      </li>
+
+      <li class="s1-info-row" role="listitem">
+        <span class="s1-info-row__left">
+          <i class="ph ph-text-h" aria-hidden="true"></i>
+          <span class="s1-info-row__label" id="info-label-headings">Headings</span>
+        </span>
+        <span class="s1-info-row__value" id="info-headings">—</span>
+      </li>
+
+      <li class="s1-info-row" role="listitem">
+        <span class="s1-info-row__left">
+          <i class="ph ph-corners-out" aria-hidden="true"></i>
+          <span class="s1-info-row__label" id="info-label-viewport">Viewport</span>
+        </span>
+        <span class="s1-info-row__value" id="info-viewport">—</span>
+      </li>
+
+      <li class="s1-info-row" role="listitem">
+        <span class="s1-info-row__left">
+          <i class="ph ph-shield-check" aria-hidden="true"></i>
+          <span class="s1-info-row__label" id="info-label-protocol">Protocol</span>
+        </span>
+        <span class="s1-info-row__value" id="info-https">—</span>
+      </li>
+
+    </ul>
+
+    <!-- Divider bottom -->
+    <div class="s1-divider" aria-hidden="true"></div>
+
+    <!-- Run Audit button -->
+    <div class="s1-actions">
+      <button id="btn-analyze" class="s1-btn" aria-describedby="analyze-desc">
+        <i class="ph ph-play s1-btn__icon" aria-hidden="true"></i>
+        <span id="btn-analyze-text">Run Audit</span>
+      </button>
+      <p id="analyze-desc" class="sr-only">Analyzes the current page for ARIA and keyboard accessibility issues</p>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SCREEN 2 — Analysis in Progress
+  ════════════════════════════════════════════════════════ -->
+  <div id="screen-loading" class="screen" role="main" aria-label="Analysis in progress" aria-hidden="true">
+
+    <header class="s1-header" role="banner">
+      <div class="s1-header__left">
+        <i class="ph ph-chart-polar s1-header__icon" aria-hidden="true"></i>
+        <span class="s1-header__title" id="header-title-s2">A11Y Analyzer</span>
+      </div>
+      <button class="header-lang-switch" data-lang="en" aria-label="Toggle language / 언어 전환">
+        <span class="lang-text lang-eng">ENG</span>
+        <span class="lang-divider">|</span>
+        <span class="lang-text lang-kor">KOR</span>
+      </button>
+    </header>
+
+    <!-- Scanning view container -->
+    <div class="loading-active-view" id="scanner-active">
+      <div class="scanner-container">
+        <div class="scanner-card">
+          <!-- Wireframe header skeleton -->
+          <div class="scanner-card-header">
+            <div class="scanner-skeleton-circle"></div>
+            <div class="scanner-skeleton-row" style="width: 40%; height: 8px;"></div>
+          </div>
+          <!-- Wireframe body skeleton -->
+          <div class="scanner-graphic">
+            <div class="scanner-skeleton-row" style="width: 90%;"></div>
+            <div class="scanner-skeleton-row" style="width: 75%;"></div>
+            <div class="scanner-skeleton-row" style="width: 60%;"></div>
+            
+            <!-- Laser scanning bar -->
+            <div class="scanner-bar"></div>
+          </div>
+        </div>
+        
+        <!-- Auditing status with rotating notch -->
+        <div class="scanner-status">
+          <i class="ph ph-circle-notch spinner-anim scanner-status__icon" aria-hidden="true"></i>
+          <span class="scanner-status__text" id="loading-status" aria-live="polite">Scanning page…</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Premium Error/Empty state container — 100% compliant with popup design lang -->
+    <div class="loading-error-view" id="scanner-error" style="display: none;">
+      
+      <!-- Top Hero Section — large bold typography and icon box -->
+      <div class="s2-error-hero">
+        <div class="s2-error-icon-box" id="scanner-error-icon-box">
+          <i class="ph ph-warning-circle" aria-hidden="true" id="scanner-error-icon"></i>
+        </div>
+        <h2 class="s2-error-title" id="scanner-error-title">Analysis Interrupted</h2>
+      </div>
+
+      <!-- Divider -->
+      <div class="s2-divider" aria-hidden="true"></div>
+
+      <!-- Explanation Panel (Almond-colored leaf card) -->
+      <div class="s2-error-body">
+        <div class="s2-error-card">
+          <p class="s2-error-desc" id="scanner-error-desc">Connection was lost. Please try reloading the tab to restore connection.</p>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="s2-divider" aria-hidden="true"></div>
+
+      <!-- Actions Section — CTA Button -->
+      <div class="s2-error-actions">
+        <button class="s1-btn" id="btn-error-action">
+          <i class="ph ph-arrows-clockwise" aria-hidden="true"></i>
+          <span id="btn-error-text">Reload Tab</span>
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SCREEN 3 — Results Summary
+  ════════════════════════════════════════════════════════ -->
+  <div id="screen-results" class="screen" role="main" aria-label="Audit results" aria-hidden="true">
+
+    <header class="s1-header" role="banner">
+      <div class="s1-header__left">
+        <i class="ph ph-chart-polar s1-header__icon" aria-hidden="true"></i>
+        <span class="s1-header__title" id="header-title-s3">A11Y Analyzer</span>
+      </div>
+      <button class="header-lang-switch" data-lang="en" aria-label="Toggle language / 언어 전환">
+        <span class="lang-text lang-eng">ENG</span>
+        <span class="lang-divider">|</span>
+        <span class="lang-text lang-kor">KOR</span>
+      </button>
+    </header>
+
+    <!-- Grade Hero — premium, unboxed, integrated -->
+    <div class="s3-grade-hero">
+      <div class="s3-score-icon" id="s3-score-icon">
+        <svg class="s3-score-ring" width="56" height="56" viewBox="0 0 56 56" aria-hidden="true">
+          <!-- Outer border -->
+          <circle cx="28" cy="28" r="27.5" fill="none" stroke="var(--c-border)" stroke-width="1" />
+          <!-- Track background -->
+          <circle class="s3-score-ring__track" cx="28" cy="28" r="24.5" fill="var(--c-bg)" stroke="var(--ink-200)" stroke-width="5" />
+          <!-- Active progress stroke -->
+          <circle class="s3-score-ring__progress" cx="28" cy="28" r="24.5" fill="none" stroke="var(--score-color, var(--c-primary))" stroke-width="5" stroke-dasharray="153.94" stroke-dashoffset="153.94" stroke-linecap="square" transform="rotate(-90 28 28)" />
+          <!-- Inner border -->
+          <circle cx="28" cy="28" r="21.5" fill="none" stroke="var(--c-border)" stroke-width="1" />
+        </svg>
+        <span class="s3-score-number" id="s3-score-number">0</span>
+      </div>
+      <div class="s3-grade-info">
+        <h2 class="s3-report-summary" id="s3-report-summary">—</h2>
+        <p class="s3-website-domain" id="s3-website-name">—</p>
+        <div class="s3-tags">
+          <span class="s3-tag" id="s3-tag-1">—</span>
+          <span class="s3-tag" id="s3-tag-2">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="s3-divider" aria-hidden="true"></div>
+
+    <!-- Information rows -->
+    <div class="s3-info-section" role="list" aria-label="Accessibility metrics">
+      <div class="s3-info-row" role="listitem">
+        <div class="s3-info-left">
+          <i class="ph ph-translate" aria-hidden="true"></i>
+          <span class="s3-info-label" id="s3-label-lang">Language</span>
+        </div>
+        <span class="s3-info-value" id="s3-info-lang">—</span>
+      </div>
+
+      <div class="s3-info-row" role="listitem">
+        <div class="s3-info-left">
+          <i class="ph ph-hand-pointing" aria-hidden="true"></i>
+          <span class="s3-info-label" id="s3-label-interactive">Interactive</span>
+        </div>
+        <span class="s3-info-value" id="s3-info-interactive">—</span>
+      </div>
+
+      <div class="s3-info-row" role="listitem">
+        <div class="s3-info-left">
+          <i class="ph ph-image" aria-hidden="true"></i>
+          <span class="s3-info-label" id="s3-label-images">Images</span>
+        </div>
+        <span class="s3-info-value" id="s3-info-images">—</span>
+      </div>
+
+      <div class="s3-info-row" role="listitem">
+        <div class="s3-info-left">
+          <i class="ph ph-text-h" aria-hidden="true"></i>
+          <span class="s3-info-label" id="s3-label-headings">Headings</span>
+        </div>
+        <span class="s3-info-value" id="s3-info-headings">—</span>
+      </div>
+
+      <div class="s3-info-row" role="listitem">
+        <div class="s3-info-left">
+          <i class="ph ph-corners-out" aria-hidden="true"></i>
+          <span class="s3-info-label" id="s3-label-viewport">Viewport</span>
+        </div>
+        <span class="s3-info-value" id="s3-info-viewport">—</span>
+      </div>
+
+      <div class="s3-info-row" role="listitem">
+        <div class="s3-info-left">
+          <i class="ph ph-shield-check" aria-hidden="true"></i>
+          <span class="s3-info-label" id="s3-label-protocol">Protocol</span>
+        </div>
+        <span class="s3-info-value" id="s3-info-protocol">—</span>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="s3-divider" aria-hidden="true"></div>
+
+    <!-- Actions Section — Re-audit & Download Report -->
+    <div class="s3-actions-section">
+      <button class="s3-secondary-btn" id="btn-rerun" aria-label="Re-run accessibility audit on the current page">
+        <i class="ph ph-arrows-clockwise s3-secondary-btn__icon" aria-hidden="true"></i>
+        <span id="btn-rerun-text">Re-audit</span>
+      </button>
+      <button class="s3-download-btn" id="btn-download" aria-label="Download full accessibility report as HTML">
+        <i class="ph ph-download-simple s3-download-btn__icon" aria-hidden="true"></i>
+        <span id="btn-download-text">Download Report</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Visually-hidden utility class live region for AT announcements -->
+  <div class="sr-only" aria-live="assertive" id="at-announce"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

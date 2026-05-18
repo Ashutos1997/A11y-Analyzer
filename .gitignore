@@ -1,0 +1,11 @@
+# Local tool exclude
+design-auditor/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Archives and build products
+*.zip
+*.skill
+*.tar.gz

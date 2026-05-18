@@ -1,0 +1,169 @@
+/* ============================================================
+   A11y Analyzer — Screen 2 Scanner Animations
+   ─────────────────────────────────────────────────
+   High-fidelity website mockup card scanning simulation.
+   Strict 60:30:10 color system & 8px corner-radius grid.
+   Fully WCAG 2.2 compliant with OS reduced motion support.
+============================================================ */
+
+/* Outer loading layout centered inside the screen */
+.scanner-container {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-6); /* 24px spacing between card and status */
+  margin: var(--sp-4) var(--gutter); /* 16px margins */
+  flex: 1;
+  min-height: 250px;
+}
+
+/* Premium wireframe dashboard card — 60% white bg with thin borders */
+.scanner-card {
+  width: 240px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border-subtle);
+  border-radius: var(--r-8);
+  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.04);
+  padding: var(--sp-4); /* 16px */
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4); /* 16px */
+}
+
+/* Card header wireframe simulation */
+.scanner-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2); /* 8px */
+  padding-bottom: var(--sp-1);
+}
+
+.scanner-skeleton-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--c-surface-alt);
+  flex-shrink: 0;
+}
+
+/* Pulsing skeleton line row */
+.scanner-skeleton-row {
+  height: 12px;
+  background: var(--c-surface-alt);
+  border-radius: 4px; /* Optically nested inner radius (Container 8px - Padding 16px -> 4px scale) */
+  position: relative;
+  overflow: hidden;
+}
+
+/* Body wireframe content rows */
+.scanner-graphic {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3); /* 12px vertical spacing */
+  position: relative;
+}
+
+/* Active scanning laser bar — 10% indigo accent (hidden by default on reduced motion) */
+.scanner-bar {
+  position: absolute;
+  left: -20px;
+  right: -20px;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--indigo-500) 50%,
+    transparent 100%
+  );
+  box-shadow: 0 0 10px var(--indigo-400);
+  z-index: 5;
+  display: none; /* Only displayed when motion is preferred */
+}
+
+/* Scanning status container */
+.scanner-status {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2); /* 8px */
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--c-surface-alt);
+  border: 1px solid var(--c-border-subtle);
+  border-radius: var(--r-8);
+}
+
+/* Rotating loader icon — 10% active accent */
+.scanner-status__icon {
+  font-size: var(--fs-16);
+  color: var(--indigo-600);
+  flex-shrink: 0;
+  display: inline-block;
+  transform: rotate(45deg); /* Static fallback */
+}
+
+.scanner-status__text {
+  font-family: var(--font-sans);
+  font-size: var(--fs-14);
+  font-weight: 500;
+  color: var(--c-text-secondary);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+/* ────────────────────────────────────────────────────────────
+   WCAG 2.2 Motion Safeguards: prefers-reduced-motion
+   ──────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  /* Activate pulsing skeletons */
+  .scanner-skeleton-circle,
+  .scanner-skeleton-row {
+    animation: skeleton-pulse 1.8s ease-in-out infinite;
+  }
+
+  /* Stagger skeleton delay for organic rhythmic feeling */
+  .scanner-card-header .scanner-skeleton-row { animation-delay: 0s; }
+  .scanner-graphic .scanner-skeleton-row:nth-child(1) { animation-delay: 0.2s; }
+  .scanner-graphic .scanner-skeleton-row:nth-child(2) { animation-delay: 0.4s; }
+  .scanner-graphic .scanner-skeleton-row:nth-child(3) { animation-delay: 0.6s; }
+
+  @keyframes skeleton-pulse {
+    0%, 100% {
+      opacity: 0.6;
+      background-color: var(--c-surface-alt);
+    }
+    50% {
+      opacity: 1;
+      background-color: var(--c-border-subtle);
+    }
+  }
+
+  /* Display and animate active scanning laser bar */
+  .scanner-bar {
+    display: block;
+    animation: laser-sweep 3s ease-in-out infinite;
+  }
+
+  @keyframes laser-sweep {
+    0%, 100% {
+      top: -8px;
+      opacity: 0.4;
+    }
+    50% {
+      top: 72px;
+      opacity: 1;
+    }
+  }
+
+  /* Activate spin animation for loading spinner */
+  .spinner-anim {
+    animation: spin-rotate 1.2s linear infinite;
+  }
+
+  @keyframes spin-rotate {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+}
