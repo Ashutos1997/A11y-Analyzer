@@ -70,6 +70,7 @@ const translations = {
     loadingKeyboard: "Testing keyboard support…",
     loadingHeadings: "Auditing heading structure…",
     loadingLinks: "Checking links & buttons…",
+    loadingContrast: "Checking color contrast…",
     errorRestrictedTitle: "Analysis Restricted",
     errorRestrictedDesc: "Standard browser security policies prevent extensions from running audits on system settings, internal pages, or the Web Store.",
     errorRestrictedBtn: "Visit Webpage",
@@ -111,6 +112,7 @@ const translations = {
     loadingKeyboard: "키보드 지원 테스트 중…",
     loadingHeadings: "제목 구조 진단 중…",
     loadingLinks: "링크 및 버튼 검사 중…",
+    loadingContrast: "색상 대비 진단 중…",
     errorRestrictedTitle: "분석 제한됨",
     errorRestrictedDesc: "브라우저 보안 정책으로 인해 시스템 설정, 내부 페이지 또는 확장 프로그램 웹 스토어에서는 접근성 진단을 실행할 수 없습니다.",
     errorRestrictedBtn: "웹페이지 방문",
@@ -242,6 +244,11 @@ const CATEGORIES = [
     key: "links",
     label: "Links & Buttons",
     icon: `<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M240,88.23a54.43,54.43,0,0,1-16,37L189.25,160a54.27,54.27,0,0,1-38.63,16h-.05A54.63,54.63,0,0,1,96,119.84a8,8,0,0,1,16,.45A38.62,38.62,0,0,0,150.58,160h0a38.39,38.39,0,0,0,27.31-11.31l34.75-34.75a38.63,38.63,0,0,0-54.63-54.63l-11,11A8,8,0,0,1,135.7,59l11-11A54.65,54.65,0,0,1,224,48,54.86,54.86,0,0,1,240,88.23ZM109,185.66l-11,11A38.41,38.41,0,0,1,70.6,208h0a38.63,38.63,0,0,1-27.29-65.94L78,107.31A38.63,38.63,0,0,1,144,135.71a8,8,0,0,0,16,.45A54.86,54.86,0,0,0,144,96a54.65,54.65,0,0,0-77.27,0L32,130.75A54.62,54.62,0,0,0,70.56,224h0a54.28,54.28,0,0,0,38.64-16l11-11A8,8,0,0,0,109,185.66Z"/></svg>`,
+  },
+  {
+    key: "contrast",
+    label: "Contrast",
+    icon: `<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM40,128a88,88,0,0,1,88-88V216A88,88,0,0,1,40,128Z"/></svg>`,
   },
 ];
 
@@ -382,6 +389,7 @@ function updateLoadingStatus(label) {
   else if (label === "Testing keyboard support…") displayLabel = t.loadingKeyboard;
   else if (label === "Auditing heading structure…") displayLabel = t.loadingHeadings;
   else if (label === "Checking links & buttons…") displayLabel = t.loadingLinks;
+  else if (label === "Checking color contrast…") displayLabel = t.loadingContrast;
 
   elLoadingStatus.textContent = displayLabel;
 }
@@ -801,7 +809,8 @@ function generateReport(data) {
       catForms: "Forms",
       catImages: "Images",
       catHeadings: "Headings",
-      catLinks: "Links & Buttons"
+      catLinks: "Links & Buttons",
+      catContrast: "Contrast"
     },
     ko: {
       reportTitle: "웹 접근성 정밀 진단 보고서",
@@ -857,7 +866,8 @@ function generateReport(data) {
       catForms: "폼 양식 및 입력",
       catImages: "이미지 대체 텍스트",
       catHeadings: "제목 구조 계층",
-      catLinks: "링크 및 버튼 라벨"
+      catLinks: "링크 및 버튼 라벨",
+      catContrast: "색상 대비"
     }
   };
 
@@ -1357,6 +1367,13 @@ function generateReport(data) {
       }
       if (msg.indexOf("Mock link behaves as an interactive action") !== -1) {
         return "가짜 링크(# 또는 javascript 호출)가 감지되었습니다. 실제 페이지 이동이 아닌 동적 조작을 하는 요소는 <a> 태그 대신 role='button' 또는 <button> 요소를 사용하여 표현해야 스크린 리더 및 검색엔진이 혼동하지 않습니다.";
+      }
+      if (msg.indexOf("Low text color contrast ratio") !== -1) {
+        var ratioMatch = msg.match(/ratio \((\d+\.?\d*):1\)/);
+        var reqMatch = msg.match(/is (\d+\.?\d*):1/);
+        var ratio = ratioMatch ? ratioMatch[1] : "";
+        var req = reqMatch ? reqMatch[1] : "";
+        return "텍스트 색상 대비가 낮습니다 (현재 비율 " + ratio + ":1). 본 텍스트 크기의 권장 최소 대비 비율은 " + req + ":1 입니다. 텍스트와 배경의 명도 대비를 높여 시각 장애인 및 저시력자가 내용을 읽을 수 있도록 조치하세요.";
       }
       return msg;
     }

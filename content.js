@@ -783,15 +783,26 @@
       }
     });
 
-    // 8. Color Contrast Ratio Auditing (WCAG 1.4.3 - Minimum Contrast)
+    score = Math.max(0, 100 - deductions);
+    return { score, issues, counts };
+  }
+
+  // 8. Color Contrast Auditing (weight 10)
+  function checkContrast() {
+    const issues = [];
+    let score = 100;
+    let deductions = 0;
+    let textTested = 0;
+    let contrastFailures = 0;
+
     const textElements = Array.from(document.querySelectorAll("p, li, label, td, th, h1, h2, h3, h4, h5, h6, a[href], button"));
     
-    // Sample up to 60 visible text elements to ensure high performance
+    // Sample up to 100 visible text elements to ensure high performance & coverage
     const visibleTextElements = textElements.filter(el => {
       if (isHiddenFromAT(el)) return false;
       const rect = el.getBoundingClientRect();
       return rect.width > 0 && rect.height > 0;
-    }).slice(0, 60);
+    }).slice(0, 100);
 
     visibleTextElements.forEach((el) => {
       const style = getComputedStyle(el);
@@ -799,6 +810,7 @@
       
       const fgMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
       if (fgMatch) {
+        textTested++;
         const fgRgb = [parseInt(fgMatch[1]), parseInt(fgMatch[2]), parseInt(fgMatch[3])];
         const bgRgb = getElementBgColor(el);
         
@@ -815,7 +827,7 @@
         const threshold = isLarge ? 3.0 : 4.5;
         
         if (ratio < threshold) {
-          counts.contrastFailures++;
+          contrastFailures++;
           const roundedRatio = Math.round(ratio * 100) / 100;
           issues.push({
             severity: ratio < 3.0 ? "critical" : "warning",
@@ -829,7 +841,7 @@
     });
 
     score = Math.max(0, 100 - deductions);
-    return { score, issues, counts };
+    return { score, issues, counts: { textTested, contrastFailures } };
   }
 
   // ── Page metadata ────────────────────────────────────────
@@ -855,14 +867,15 @@
   // ── Main runner ──────────────────────────────────────────
   async function runAnalysis(port) {
     const steps = [
-      { id: "meta",     label: "Reading page metadata…",       pct: 5,  fn: getPageMeta },
-      { id: "landmarks",label: "Checking landmark regions…",   pct: 20, fn: checkLandmarks },
-      { id: "aria",     label: "Auditing ARIA attributes…",    pct: 38, fn: checkARIA },
-      { id: "images",   label: "Checking images & media…",     pct: 52, fn: checkImages },
-      { id: "forms",    label: "Analyzing form accessibility…", pct: 65, fn: checkForms },
-      { id: "keyboard", label: "Testing keyboard support…",    pct: 80, fn: checkKeyboard },
-      { id: "headings", label: "Auditing heading structure…",  pct: 90, fn: checkHeadings },
-      { id: "links",    label: "Checking links & buttons…",    pct: 98, fn: checkLinksButtons },
+      { id: "meta",      label: "Reading page metadata…",       pct: 5,  fn: getPageMeta },
+      { id: "landmarks", label: "Checking landmark regions…",   pct: 15, fn: checkLandmarks },
+      { id: "aria",      label: "Auditing ARIA attributes…",    pct: 30, fn: checkARIA },
+      { id: "images",    label: "Checking images & media…",     pct: 45, fn: checkImages },
+      { id: "forms",     label: "Analyzing form accessibility…", pct: 60, fn: checkForms },
+      { id: "keyboard",  label: "Testing keyboard support…",    pct: 72, fn: checkKeyboard },
+      { id: "headings",  label: "Auditing heading structure…",  pct: 82, fn: checkHeadings },
+      { id: "links",     label: "Checking links & buttons…",    pct: 90, fn: checkLinksButtons },
+      { id: "contrast",  label: "Checking color contrast…",    pct: 98, fn: checkContrast },
     ];
 
     const results = {};
@@ -874,7 +887,7 @@
     }
 
     // ── Weighted score calculation ──────────────────────────
-    const weights = { landmarks: 15, aria: 20, images: 15, forms: 15, keyboard: 20, headings: 10, links: 5 };
+    const weights = { landmarks: 15, aria: 15, images: 10, forms: 15, keyboard: 15, headings: 10, links: 5, contrast: 15 };
     const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
     const weightedScore = Object.entries(weights).reduce((acc, [key, w]) => {
       return acc + (results[key]?.score ?? 100) * (w / totalWeight);
@@ -907,6 +920,7 @@
             keyboard:  results.keyboard.score,
             headings:  results.headings.score,
             links:     results.links.score,
+            contrast:  results.contrast.score,
           },
           issues: allIssues,
           summary: { critical: criticalCount, warning: warningCount, info: infoCount, total: allIssues.length },
@@ -917,6 +931,7 @@
             keyboard:  results.keyboard.counts,
             headings:  results.headings.counts,
             links:     results.links.counts,
+            contrast:  results.contrast.counts,
           },
         },
       });

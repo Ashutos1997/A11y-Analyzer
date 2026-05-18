@@ -84,11 +84,12 @@ To export as PDF: open it → Ctrl+P → Save as PDF.
 
 | Category       | Weight | What's analyzed |
 |----------------|--------|-----------------|
-| Keyboard Nav   | 20%    | tabindex order, skip links, focus indicators, clickable-div traps |
-| ARIA           | 20%    | role validity, required attributes, aria-hidden misuse, missing names |
+| Keyboard Nav   | 15%    | tabindex order, skip links, focus indicators, clickable-div traps |
+| ARIA           | 15%    | role validity, required attributes, aria-hidden misuse, missing names |
 | Landmarks      | 15%    | main, nav, header, footer presence and labeling |
 | Forms          | 15%    | label associations, aria-required, fieldset grouping |
-| Images         | 15%    | alt attributes, empty vs descriptive alt, SVG labels |
+| Contrast       | 15%    | programmatic color contrast ratio of visible text elements against backgrounds |
+| Images         | 10%    | alt attributes, empty vs descriptive alt, SVG labels |
 | Headings       | 10%    | h1 presence, heading hierarchy, skipped levels |
 | Links/Buttons  | 5%     | generic text, empty links, new-tab disclosure |
 
