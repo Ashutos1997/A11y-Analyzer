@@ -69,7 +69,7 @@ The audit report is dynamically compiled as a fully standalone, highly responsiv
 1. Open any website you want to audit
 2. Click the A11y Analyzer icon in the toolbar
 3. Screen 1 shows basic page info — click **Run Audit**
-4. The plugin scrolls the page while analyzing
+4. The extension instantly runs 14 categorical accessibility audits
 5. Screen 3 shows a summary with category scores
 6. Click **Download Report** to save an HTML report
 
