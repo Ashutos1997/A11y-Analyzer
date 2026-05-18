@@ -28,10 +28,28 @@ Designed for designers and developers.
   </tbody>
 </table>
 
-### Generated HTML Report
+### Generated HTML Report Showcase
 
+The audit report is dynamically compiled as a fully standalone, highly responsive, and translation-ready offline dashboard. Below is a detailed visual walkthrough of the key sections of the generated audit report:
+
+#### 1. Report Overview & Score
 <p align="center">
-  <img src="images/report_v3.png" width="700" alt="Generated HTML Report Screenshot" />
+  <img src="images/report_summary_v3.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="Generated HTML Report: Summary & Overall Score" />
+</p>
+
+#### 2. Comprehensive Page Statistics
+<p align="center">
+  <img src="images/report_stats_v3.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="Generated HTML Report: Page Statistics Grid" />
+</p>
+
+#### 3. Category Breakdown & Health Scores
+<p align="center">
+  <img src="images/report_categories_v3.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="Generated HTML Report: Category Breakdown Table" />
+</p>
+
+#### 4. Detailed Remediation Issue Tracker
+<p align="center">
+  <img src="images/report_issues_v3.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="Generated HTML Report: Detailed Issue List" />
 </p>
 
 ---
@@ -113,7 +131,10 @@ a11y-extension/
 │   ├── screen1_v3.png
 │   ├── screen2_v3.png
 │   ├── screen3_v3.png
-│   └── report_v3.png
+│   ├── report_summary_v3.png
+│   ├── report_stats_v3.png
+│   ├── report_categories_v3.png
+│   └── report_issues_v3.png
 └── phosphor/          Offline Phosphor icon fonts & stylesheet
     ├── style.css
     ├── Phosphor.ttf
