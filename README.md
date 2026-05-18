@@ -132,12 +132,19 @@ a11y-extension/
 │   └── icon.svg       Scalable vector icon used for all extension sizes
 ├── images/            Walkthrough & report screenshots for README
 │   ├── screen1_v4.png
+│   ├── screen1_ko_v4.png
 │   ├── screen2_v4.png
+│   ├── screen2_ko_v4.png
 │   ├── screen3_v4.png
+│   ├── screen3_ko_v4.png
 │   ├── report_summary_v4.png
+│   ├── report_summary_ko_v4.png
 │   ├── report_stats_v4.png
+│   ├── report_stats_ko_v4.png
 │   ├── report_categories_v4.png
-│   └── report_issues_v4.png
+│   ├── report_categories_ko_v4.png
+│   ├── report_issues_v4.png
+│   └── report_issues_ko_v4.png
 └── phosphor/          Offline Phosphor icon fonts & stylesheet
     ├── style.css
     ├── Phosphor.ttf
