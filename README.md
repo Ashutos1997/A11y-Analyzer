@@ -1,3 +1,5 @@
+🌐 **[한국어 문서 (Korean)](README-ko.md)**
+
 # A11y Analyzer — Chrome Extension (MVP)
 
 Analyzes any webpage for ARIA and keyboard accessibility issues.
@@ -125,6 +127,7 @@ a11y-extension/
 ├── meta.js            Metadata & helper configurations
 ├── .gitignore         Git ignore rule configurations
 ├── README.md          Walkthrough, installation & audit documentation
+├── README-ko.md       Korean translation & walkthrough documentation
 ├── icons/             Extension icon assets
 │   └── icon.svg       Scalable vector icon used for all extension sizes
 ├── images/            Walkthrough & report screenshots for README
