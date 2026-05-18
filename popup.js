@@ -445,6 +445,64 @@ async function startAnalysis() {
 
   showScreen(screenLoading);
 
+  if (typeof chrome === "undefined" || !chrome.tabs || !activeTab) {
+    // Standalone Web Browser Mock Demo Mode
+    const labels = [
+      "Scanning page…",
+      "Reading page metadata…",
+      "Checking landmark regions…",
+      "Auditing ARIA attributes…",
+      "Checking images & media…",
+      "Analyzing form accessibility…",
+      "Testing keyboard support…",
+      "Auditing heading structure…",
+      "Checking links & buttons…"
+    ];
+    for (let i = 0; i < labels.length; i++) {
+      updateLoadingStatus(labels[i]);
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    const mockData = {
+      scores: {
+        overall: 88,
+        keyboard: 90,
+        aria: 80,
+        landmarks: 100,
+        forms: 85,
+        images: 90,
+        headings: 80,
+        links: 95
+      },
+      summary: {
+        critical: 0,
+        warning: 3,
+        info: 2
+      },
+      meta: {
+        domain: "example.com",
+        url: "https://example.com",
+        title: "Example Domain",
+        lang: "en",
+        https: true
+      },
+      foundCounts: {
+        interactive: 12,
+        images: 3,
+        headings: 3,
+        forms: 2,
+        links: 5
+      },
+      issues: [
+        { severity: "warning", message: "Button is missing explicit type attribute", wcag: "4.1.2", element: "button" },
+        { severity: "warning", message: "Image is missing alt description", wcag: "1.1.1", element: "img" },
+        { severity: "info", message: "No skip navigation link found", wcag: "2.4.1", element: "body" }
+      ]
+    };
+    auditData = mockData;
+    renderResults(mockData);
+    return;
+  }
+
   try {
     await chrome.scripting.executeScript({
       target: { tabId: activeTab.id },
