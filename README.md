@@ -7,7 +7,7 @@ Designed for designers and developers.
 
 | Screen 1: Dashboard | Screen 2: Scanning | Screen 3: Results |
 |:---:|:---:|:---:|
-| <img src="images/screen1.png" width="220" alt="Screen 1: Dashboard" /> | <img src="images/screen2.png" width="220" alt="Screen 2: Scanning" /> | <img src="images/screen3.png" width="220" alt="Screen 3: Results" /> |
+| <img src="images/screen1_v2.png" width="220" alt="Screen 1: Dashboard" /> | <img src="images/screen2_v2.png" width="220" alt="Screen 2: Scanning" /> | <img src="images/screen3_v2.png" width="220" alt="Screen 3: Results" /> |
 
 ---
 
