@@ -114,11 +114,9 @@ a11y-extension/
 │   ├── screen2_v2.png
 │   ├── screen3_v2.png
 │   └── report_v2.png
-├── phosphor/          Offline Phosphor icon fonts & stylesheet
-│   ├── style.css
-│   ├── Phosphor.ttf
-│   ├── Phosphor.woff
-│   └── Phosphor.woff2
-└── design-auditor/    Design Auditor skill file & guidelines
-    └── SKILL.md
+└── phosphor/          Offline Phosphor icon fonts & stylesheet
+    ├── style.css
+    ├── Phosphor.ttf
+    ├── Phosphor.woff
+    └── Phosphor.woff2
 ```
