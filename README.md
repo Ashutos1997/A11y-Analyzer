@@ -5,9 +5,28 @@ Designed for designers and developers.
 
 ## Screenshots
 
-| Screen 1: Dashboard | Screen 2: Scanning | Screen 3: Results |
-|:---:|:---:|:---:|
-| <img src="images/screen1_v2.png" width="220" alt="Screen 1: Dashboard" /> | <img src="images/screen2_v2.png" width="220" alt="Screen 2: Scanning" /> | <img src="images/screen3_v2.png" width="220" alt="Screen 3: Results" /> |
+<table>
+  <thead>
+    <tr>
+      <th align="center" width="33%">Screen 1: Dashboard</th>
+      <th align="center" width="33%">Screen 2: Scanning</th>
+      <th align="center" width="33%">Screen 3: Results</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td valign="top" align="center">
+        <img src="images/screen1_v2.png" width="220" alt="Screen 1: Dashboard" />
+      </td>
+      <td valign="top" align="center">
+        <img src="images/screen2_v2.png" width="220" alt="Screen 2: Scanning" />
+      </td>
+      <td valign="top" align="center">
+        <img src="images/screen3_v2.png" width="220" alt="Screen 3: Results" />
+      </td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
