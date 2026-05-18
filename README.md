@@ -108,9 +108,7 @@ a11y-extension/
 ├── .gitignore         Git ignore rule configurations
 ├── README.md          Walkthrough, installation & audit documentation
 ├── icons/             Extension icon assets
-│   ├── icon16.png
-│   ├── icon48.png
-│   └── icon128.png
+│   └── icon.svg       Scalable vector icon used for all extension sizes
 ├── images/            Walkthrough & report screenshots for README
 │   ├── screen1_v2.png
 │   ├── screen2_v2.png
