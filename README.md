@@ -5,24 +5,24 @@ Designed for designers and developers.
 
 ## Screenshots
 
-<table>
+<table style="table-layout: fixed; width: 100%;">
   <thead>
     <tr>
-      <th align="center" width="33%">Screen 1: Dashboard</th>
-      <th align="center" width="33%">Screen 2: Scanning</th>
-      <th align="center" width="33%">Screen 3: Results</th>
+      <th align="center" style="width: 33.33%;">Screen 1: Dashboard</th>
+      <th align="center" style="width: 33.33%;">Screen 2: Scanning</th>
+      <th align="center" style="width: 33.33%;">Screen 3: Results</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td valign="top" align="center">
-        <img src="images/screen1_v2.png" width="220" alt="Screen 1: Dashboard" />
+      <td valign="top" align="center" style="width: 33.33%;">
+        <img src="images/screen1_v2.png" width="100%" style="max-width: 220px; display: block;" alt="Screen 1: Dashboard" />
       </td>
-      <td valign="top" align="center">
-        <img src="images/screen2_v2.png" width="220" alt="Screen 2: Scanning" />
+      <td valign="top" align="center" style="width: 33.33%;">
+        <img src="images/screen2_v2.png" width="100%" style="max-width: 220px; display: block;" alt="Screen 2: Scanning" />
       </td>
-      <td valign="top" align="center">
-        <img src="images/screen3_v2.png" width="220" alt="Screen 3: Results" />
+      <td valign="top" align="center" style="width: 33.33%;">
+        <img src="images/screen3_v2.png" width="100%" style="max-width: 220px; display: block;" alt="Screen 3: Results" />
       </td>
     </tr>
   </tbody>
