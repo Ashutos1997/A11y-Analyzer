@@ -28,6 +28,12 @@ Designed for designers and developers.
   </tbody>
 </table>
 
+### Generated HTML Report
+
+<p align="center">
+  <img src="images/report_v2.png" width="700" alt="Generated HTML Report Screenshot" />
+</p>
+
 ---
 
 ## Setup

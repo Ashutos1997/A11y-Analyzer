@@ -39,7 +39,7 @@ const elS3InfoProtocol  = document.getElementById("s3-info-protocol");
 
 // ── State ────────────────────────────────────────────────────
 let activeTab  = null;
-let auditData  = null;
+var auditData  = null;
 const completedSteps = [];
 
 // ── Translations ──────────────────────────────────────────────
