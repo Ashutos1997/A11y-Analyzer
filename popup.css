@@ -446,14 +446,37 @@ body::after {
   color: var(--c-text);
 }
 
-/* Value: Inter 14px regular */
+/* Value: flat, high-contrast dashboard chip, consistent with Screen 3 */
 .s1-info-row__value {
-  font-size: var(--fs-14);
-  font-weight: 300;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--sp-2); /* 8px horizontal */
+  height: 22px;
+  background: var(--ink-100);
+  border: 1px solid var(--c-border-subtle);
+  border-radius: var(--r-8);
+  font-family: var(--font-sans);
+  font-size: var(--fs-12);
+  font-weight: 600;
+  line-height: 1;
   color: var(--c-text-secondary);
-  text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+/* Color-coded flat states consistent with Screen 3 */
+.s1-info-row__value[data-state="pass"] {
+  background: var(--c-success-bg);
+  border-color: var(--c-success-border);
+  color: var(--c-success-text);
+}
+
+.s1-info-row__value[data-state="fail"] {
+  background: var(--c-failure-bg);
+  border-color: var(--c-failure-border);
+  color: var(--c-failure-text);
+}
+
 
 /* CTA button — 16px padding, 44px height */
 .s1-actions {

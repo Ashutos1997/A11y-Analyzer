@@ -16,13 +16,13 @@ Designed for designers and developers.
   <tbody>
     <tr>
       <td valign="top" align="center" style="width: 33.33%;">
-        <img src="images/screen1_v2.png" width="100%" style="max-width: 220px; display: block;" alt="Screen 1: Dashboard" />
+        <img src="images/screen1_v3.png" width="100%" style="max-width: 220px; display: block;" alt="Screen 1: Dashboard" />
       </td>
       <td valign="top" align="center" style="width: 33.33%;">
-        <img src="images/screen2_v2.png" width="100%" style="max-width: 220px; display: block;" alt="Screen 2: Scanning" />
+        <img src="images/screen2_v3.png" width="100%" style="max-width: 220px; display: block;" alt="Screen 2: Scanning" />
       </td>
       <td valign="top" align="center" style="width: 33.33%;">
-        <img src="images/screen3_v2.png" width="100%" style="max-width: 220px; display: block;" alt="Screen 3: Results" />
+        <img src="images/screen3_v3.png" width="100%" style="max-width: 220px; display: block;" alt="Screen 3: Results" />
       </td>
     </tr>
   </tbody>
@@ -31,7 +31,7 @@ Designed for designers and developers.
 ### Generated HTML Report
 
 <p align="center">
-  <img src="images/report_v2.png" width="700" alt="Generated HTML Report Screenshot" />
+  <img src="images/report_v3.png" width="700" alt="Generated HTML Report Screenshot" />
 </p>
 
 ---
@@ -110,10 +110,10 @@ a11y-extension/
 ├── icons/             Extension icon assets
 │   └── icon.svg       Scalable vector icon used for all extension sizes
 ├── images/            Walkthrough & report screenshots for README
-│   ├── screen1_v2.png
-│   ├── screen2_v2.png
-│   ├── screen3_v2.png
-│   └── report_v2.png
+│   ├── screen1_v3.png
+│   ├── screen2_v3.png
+│   ├── screen3_v3.png
+│   └── report_v3.png
 └── phosphor/          Offline Phosphor icon fonts & stylesheet
     ├── style.css
     ├── Phosphor.ttf

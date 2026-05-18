@@ -262,12 +262,24 @@ async function loadPageInfo() {
     elDomain.textContent = "example.com";
     elProtoBadge.textContent = "HTTPS";
     elProtoBadge.setAttribute("data-secure", "true");
+    
     elHttps.textContent = t.secure;
+    elHttps.setAttribute("data-state", "pass");
+    
     elLang.textContent = "en";
+    elLang.setAttribute("data-state", "pass");
+    
     elInteractive.textContent = `12 ${t.elements}`;
+    elInteractive.removeAttribute("data-state");
+    
     elImages.textContent = `3 ${t.total}`;
+    elImages.removeAttribute("data-state");
+    
     elHeadings.textContent = `3 ${t.total}`;
+    elHeadings.removeAttribute("data-state");
+    
     elViewport.textContent = t.present;
+    elViewport.setAttribute("data-state", "pass");
 
     // Set fallback favicon left of domain
     const fallbackFavicon = `https://www.google.com/s2/favicons?domain=example.com&sz=32`;
@@ -289,6 +301,7 @@ async function loadPageInfo() {
   elProtoBadge.textContent = https ? "HTTPS" : "HTTP";
   elProtoBadge.setAttribute("data-secure", https ? "true" : "false");
   elHttps.textContent      = https ? t.secure : t.insecure;
+  elHttps.setAttribute("data-state", https ? "pass" : "fail");
 
   // Set active tab's favicon (or reliable Google favicon fallback) left of domain
   const favIconUrl = tab.favIconUrl || `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=32`;
@@ -318,19 +331,37 @@ async function loadPageInfo() {
     const m = await metaPromise;
     if (m) {
       elLang.textContent        = m.lang || "None";
+      elLang.setAttribute("data-state", m.lang ? "pass" : "fail");
+      
       elInteractive.textContent = `${m.interactive} ${t.elements}`;
+      elInteractive.removeAttribute("data-state");
+      
       elImages.textContent      = `${m.images} ${t.total}`;
+      elImages.removeAttribute("data-state");
+      
       elHeadings.textContent    = `${m.headings} ${t.total}`;
+      elHeadings.removeAttribute("data-state");
+      
       elViewport.textContent    = m.viewport ? t.present : t.missing;
+      elViewport.setAttribute("data-state", m.viewport ? "pass" : "fail");
     } else {
       throw new Error("timeout");
     }
   } catch {
     elLang.textContent        = "—";
+    elLang.removeAttribute("data-state");
+    
     elInteractive.textContent = "—";
+    elInteractive.removeAttribute("data-state");
+    
     elImages.textContent      = "—";
+    elImages.removeAttribute("data-state");
+    
     elHeadings.textContent    = "—";
+    elHeadings.removeAttribute("data-state");
+    
     elViewport.textContent    = "—";
+    elViewport.removeAttribute("data-state");
   }
 }
 
