@@ -1031,6 +1031,395 @@
     return { score, issues, counts: { textTested, contrastFailures } };
   }
 
+  // 9. Inline Language Check (weight 5)
+  function checkInlineLang() {
+    const issues = [];
+    let score = 100;
+    let deductions = 0;
+    const counts = { totalChecked: 0, inlineMismatches: 0 };
+
+    const elements = Array.from(document.querySelectorAll("p, span, blockquote, q, cite, li, td, dt, dd")).filter(el => {
+      if (isHiddenFromAT(el)) return false;
+      const text = el.textContent || "";
+      return text.trim().length >= 15;
+    });
+
+    const pageLang = (document.documentElement.getAttribute("lang") || "en").trim().toLowerCase().split("-")[0];
+
+    function getClosestLang(el) {
+      let node = el;
+      while (node) {
+        if (node.hasAttribute("lang")) {
+          return node.getAttribute("lang").trim().toLowerCase();
+        }
+        node = node.parentElement;
+      }
+      return "";
+    }
+
+    const langSignatures = {
+      fr: {
+        words: new Set(["le", "la", "les", "des", "dans", "une", "pour", "avec", "est", "sont", "cette", "mais"]),
+        diacritics: /[éèàùçâêîôûëïœæ]/i
+      },
+      de: {
+        words: new Set(["und", "das", "der", "die", "den", "dem", "ein", "eine", "mit", "von", "ist", "sind", "nicht", "auch"]),
+        diacritics: /[äöüß]/i
+      },
+      es: {
+        words: new Set(["el", "los", "las", "del", "por", "para", "con", "una", "como", "esta", "pero"]),
+        diacritics: /[ñáéíóúü¿¡]/i
+      },
+      pt: {
+        words: new Set(["os", "as", "dos", "das", "uma", "com", "para", "por", "esta", "mais", "como"]),
+        diacritics: /[ãõçáéíóúâêô]/i
+      },
+      it: {
+        words: new Set(["il", "lo", "gli", "uno", "per", "con", "su", "come", "questo", "sono", "ma", "anche"]),
+        diacritics: /[àèìòù]/i
+      }
+    };
+
+    elements.forEach(el => {
+      const text = el.textContent;
+      const inheritedLangAttr = getClosestLang(el);
+      
+      if (el.hasAttribute("lang")) return;
+
+      const inheritedLang = (inheritedLangAttr || pageLang).split("-")[0];
+      const words = text.toLowerCase().match(/\b[a-z]{2,8}\b/g) || [];
+      if (words.length === 0) return;
+
+      counts.totalChecked++;
+
+      let bestLang = null;
+      let maxScore = 0;
+
+      for (const [lang, sig] of Object.entries(langSignatures)) {
+        let score = 0;
+        words.forEach(w => {
+          if (sig.words.has(w)) score += 3;
+        });
+        
+        const diacritics = text.match(new RegExp(sig.diacritics, "gi"));
+        if (diacritics) {
+          score += diacritics.length * 2;
+        }
+
+        if (score > maxScore) {
+          maxScore = score;
+          bestLang = lang;
+        }
+      }
+
+      if (maxScore >= 6 && bestLang && bestLang !== inheritedLang) {
+        counts.inlineMismatches++;
+        issues.push({
+          severity: "warning",
+          message: `Text appears to be in ${bestLang.toUpperCase()} but is inherited as "${inheritedLang}". Provide an explicit lang="${bestLang}" attribute so assistive technologies switch voice synthesis engine correctly.`,
+          wcag: "3.1.2",
+          element: getSelector(el),
+          snippet: getHtmlSnippet(el)
+        });
+        deductions += 4;
+      }
+    });
+
+    score = Math.max(0, 100 - deductions);
+    return { score, issues, counts };
+  }
+
+  // 10. Duplicate IDs Check (weight 5)
+  function checkDuplicateIds() {
+    const issues = [];
+    let score = 100;
+    let deductions = 0;
+    const counts = { totalIds: 0, duplicates: 0, escalated: 0 };
+    
+    const idMap = new Map();
+    document.querySelectorAll("[id]").forEach((el) => {
+      const id = el.getAttribute("id").trim();
+      if (!id) return;
+      counts.totalIds++;
+      if (idMap.has(id)) {
+        idMap.get(id).push(el);
+      } else {
+        idMap.set(id, [el]);
+      }
+    });
+    
+    idMap.forEach((elements, id) => {
+      if (elements.length > 1) {
+        counts.duplicates++;
+        const isReferenced = 
+          document.querySelector(`[aria-labelledby~="${id}"], [aria-describedby~="${id}"], label[for="${id}"], a[href="#${id}"]`) !== null;
+          
+        const severity = isReferenced ? "critical" : "warning";
+        if (severity === "critical") counts.escalated++;
+        
+        issues.push({
+          severity,
+          message: `Duplicate ID "${id}" detected (${elements.length} occurrences).${isReferenced ? " Escalated to critical as this ID is actively referenced by accessibility or navigation controls." : ""}`,
+          wcag: "4.1.1",
+          element: `[id="${id}"]`,
+          snippet: getHtmlSnippet(elements[0])
+        });
+        
+        deductions += severity === "critical" ? 15 : 6;
+      }
+    });
+    
+    score = Math.max(0, 100 - Math.min(deductions, 100));
+    return { score, issues, counts };
+  }
+
+  // 11. Reduced Motion Check (weight 6)
+  function checkReducedMotion() {
+    const issues = [];
+    let score = 100;
+    let deductions = 0;
+    const counts = { animatedElements: 0, overridden: 0 };
+    
+    let siteSupportsReducedMotion = false;
+    try {
+      for (const sheet of document.styleSheets) {
+        try {
+          const rules = sheet.cssRules || sheet.rules;
+          if (!rules) continue;
+          for (const rule of rules) {
+            if (rule.media && rule.media.mediaText.includes("prefers-reduced-motion")) {
+              siteSupportsReducedMotion = true;
+              break;
+            }
+          }
+        } catch (_) {}
+        if (siteSupportsReducedMotion) break;
+      }
+    } catch (_) {}
+    
+    if (!siteSupportsReducedMotion) {
+      document.querySelectorAll("style").forEach((styleNode) => {
+        if (styleNode.textContent.includes("prefers-reduced-motion")) {
+          siteSupportsReducedMotion = true;
+        }
+      });
+    }
+    
+    const candidates = [];
+    document.querySelectorAll("*").forEach((el) => {
+      if (candidates.length >= 60) return;
+      if (isHiddenFromAT(el)) return;
+      
+      const style = getComputedStyle(el);
+      const animName = style.animationName;
+      const animDur = style.animationDuration;
+      const transProp = style.transitionProperty;
+      const transDur = style.transitionDuration;
+      
+      const hasAnim = animName && animName !== "none" && parseFloat(animDur) > 0;
+      const hasTrans = transProp && transProp !== "none" && transProp !== "all 0s" && parseFloat(transDur) > 0;
+      
+      if (hasAnim || hasTrans) {
+        candidates.push({ el, hasAnim, hasTrans });
+      }
+    });
+    
+    counts.animatedElements = candidates.length;
+    
+    if (candidates.length > 0 && !siteSupportsReducedMotion) {
+      candidates.forEach(({ el }) => {
+        issues.push({
+          severity: "warning",
+          message: "Element has active CSS animations or transitions, but the site lacks support for prefers-reduced-motion. High motion triggers vestibular disorders in sensitive users.",
+          wcag: "2.3.3",
+          element: getSelector(el),
+          snippet: getHtmlSnippet(el)
+        });
+        deductions += 5;
+      });
+    }
+    
+    score = Math.max(0, 100 - Math.min(deductions, 100));
+    return { score, issues, counts };
+  }
+
+  // 12. Touch Targets Check (weight 8)
+  function checkTouchTargets() {
+    const issues = [];
+    let score = 100;
+    let deductions = 0;
+    const counts = { totalInteractive: 0, failures: 0 };
+    
+    const selectors = 'a[href], button, input, select, textarea, [role="button"], [role="link"], [role="checkbox"], [role="radio"], [tabindex]';
+    document.querySelectorAll(selectors).forEach((el) => {
+      if (isHiddenFromAT(el)) return;
+      
+      const rect = el.getBoundingClientRect();
+      const width = Math.round(rect.width);
+      const height = Math.round(rect.height);
+      
+      if (width === 0 && height === 0) return;
+      
+      counts.totalInteractive++;
+      
+      if (width < 44 || height < 44) {
+        counts.failures++;
+        const minDimension = Math.min(width, height);
+        const severity = minDimension < 24 ? "critical" : "warning";
+        
+        issues.push({
+          severity,
+          message: `Touch target size is too small (${width}x${height}px). Target sizes should be at least 44x44px for reliable touch activation.`,
+          wcag: "2.5.5",
+          element: getSelector(el),
+          snippet: getHtmlSnippet(el)
+        });
+        
+        deductions += severity === "critical" ? 8 : 4;
+      }
+    });
+    
+    score = Math.max(0, 100 - Math.min(deductions, 100));
+    return { score, issues, counts };
+  }
+
+  // 13. Autoplay Media Check (weight 5)
+  function checkAutoplayMedia() {
+    const issues = [];
+    let score = 100;
+    let deductions = 0;
+    const counts = { totalMedia: 0, autoplaying: 0, unmutedAutoplay: 0, mutedNoControls: 0 };
+    
+    document.querySelectorAll("video, audio").forEach((media) => {
+      counts.totalMedia++;
+      
+      const hasAutoplay = media.hasAttribute("autoplay") || media.autoplay === true;
+      const isMuted = media.hasAttribute("muted") || media.muted === true;
+      
+      if (hasAutoplay) {
+        counts.autoplaying++;
+        
+        if (!isMuted) {
+          counts.unmutedAutoplay++;
+          issues.push({
+            severity: "critical",
+            message: `${media.tagName.toLowerCase()} element autoplays audio without being muted. Sound playing automatically can disrupt screen reader users.`,
+            wcag: "1.4.2",
+            element: getSelector(media),
+            snippet: getHtmlSnippet(media)
+          });
+          deductions += 15;
+        } else {
+          const hasControls = media.hasAttribute("controls") || media.controls === true;
+          const ariaLabel = media.getAttribute("aria-label");
+          const ariaLabelledby = media.getAttribute("aria-labelledby");
+          const hasAccessibleControls = hasControls || ariaLabel || ariaLabelledby;
+          
+          if (!hasAccessibleControls) {
+            counts.mutedNoControls++;
+            issues.push({
+              severity: "info",
+              message: `${media.tagName.toLowerCase()} element autoplays while muted, but lacks accessible controls. Users must be able to pause or stop motion.`,
+              wcag: "1.4.2",
+              element: getSelector(media),
+              snippet: getHtmlSnippet(media)
+            });
+            deductions += 3;
+          }
+        }
+      }
+    });
+    
+    score = Math.max(0, 100 - Math.min(deductions, 100));
+    return { score, issues, counts };
+  }
+
+  // 14. Reflow Check (weight 5)
+  async function checkReflow() {
+    const issues = [];
+    let score = 100;
+    let deductions = 0;
+    const counts = { overflow: 0, disappeared: 0 };
+
+    const originalFontSize = document.documentElement.style.fontSize;
+    const viewportMeta = document.querySelector("meta[name='viewport']");
+    const originalViewportContent = viewportMeta ? viewportMeta.getAttribute("content") : null;
+
+    const textEls = Array.from(document.querySelectorAll("p, h1, h2, h3, h4, h5, h6, li")).filter(el => {
+      if (isHiddenFromAT(el)) return false;
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    }).slice(0, 20);
+
+    const preZoomRects = textEls.map(el => {
+      const rect = el.getBoundingClientRect();
+      return { el, width: rect.width, height: rect.height, top: rect.top };
+    });
+
+    document.documentElement.style.fontSize = "400%";
+    
+    let tempMeta = null;
+    if (viewportMeta) {
+      viewportMeta.setAttribute("content", "width=320");
+    } else {
+      tempMeta = document.createElement("meta");
+      tempMeta.name = "viewport";
+      tempMeta.content = "width=320";
+      document.head.appendChild(tempMeta);
+    }
+
+    await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
+
+    try {
+      const scrollWidth = document.documentElement.scrollWidth;
+      const innerWidth = window.innerWidth;
+      if (scrollWidth > innerWidth + 2) {
+        counts.overflow++;
+        issues.push({
+          severity: "critical",
+          message: `[Experimental] Horizontal scrolling detected (${scrollWidth}px vs viewport ${innerWidth}px) during simulated 400% zoom reflow. Pages must reflow without requiring horizontal scrolling.`,
+          wcag: "1.4.10",
+          element: "<body>",
+          snippet: "<body>"
+        });
+        deductions += 20;
+      }
+
+      preZoomRects.forEach(({ el }) => {
+        const rect = el.getBoundingClientRect();
+        const disappeared = rect.width === 0 || rect.height === 0 || rect.top > window.innerHeight * 4;
+        if (disappeared) {
+          counts.disappeared++;
+          issues.push({
+            severity: "warning",
+            message: `[Experimental] Text element became hidden or pushed extremely far off-screen during simulated 400% zoom reflow. Content should reflow cleanly without disappearing.`,
+            wcag: "1.4.10",
+            element: getSelector(el),
+            snippet: getHtmlSnippet(el)
+          });
+          deductions += 8;
+        }
+      });
+
+    } finally {
+      document.documentElement.style.fontSize = originalFontSize;
+      if (viewportMeta) {
+        if (originalViewportContent !== null) {
+          viewportMeta.setAttribute("content", originalViewportContent);
+        } else {
+          viewportMeta.removeAttribute("content");
+        }
+      } else if (tempMeta) {
+        tempMeta.remove();
+      }
+      
+      await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    }
+
+    score = Math.max(0, 100 - Math.min(deductions, 100));
+    return { score, issues, counts };
+  }
+
   // ── Page metadata ────────────────────────────────────────
   function getPageMeta() {
     const interactiveEls = document.querySelectorAll("a[href], button, input, select, textarea, [tabindex]:not([tabindex='-1']), [role='button'], [role='link']");
@@ -1054,15 +1443,21 @@
   // ── Main runner ──────────────────────────────────────────
   async function runAnalysis(port) {
     const steps = [
-      { id: "meta",      label: "Reading page metadata…",       pct: 5,  fn: getPageMeta },
-      { id: "landmarks", label: "Checking landmark regions…",   pct: 15, fn: checkLandmarks },
-      { id: "aria",      label: "Auditing ARIA attributes…",    pct: 30, fn: checkARIA },
-      { id: "images",    label: "Checking images & media…",     pct: 45, fn: checkImages },
-      { id: "forms",     label: "Analyzing form accessibility…", pct: 60, fn: checkForms },
-      { id: "keyboard",  label: "Testing keyboard support…",    pct: 72, fn: checkKeyboard },
-      { id: "headings",  label: "Auditing heading structure…",  pct: 82, fn: checkHeadings },
-      { id: "links",     label: "Checking links & buttons…",    pct: 90, fn: checkLinksButtons },
-      { id: "contrast",  label: "Checking color contrast…",    pct: 98, fn: checkContrast },
+      { id: "meta",          label: "Reading page metadata…",       pct: 4,  fn: getPageMeta },
+      { id: "landmarks",     label: "Checking landmark regions…",   pct: 10, fn: checkLandmarks },
+      { id: "aria",          label: "Auditing ARIA attributes…",    pct: 18, fn: checkARIA },
+      { id: "images",        label: "Checking images & media…",     pct: 26, fn: checkImages },
+      { id: "forms",         label: "Analyzing form accessibility…", pct: 34, fn: checkForms },
+      { id: "keyboard",      label: "Testing keyboard support…",    pct: 42, fn: checkKeyboard },
+      { id: "headings",      label: "Auditing heading structure…",  pct: 50, fn: checkHeadings },
+      { id: "links",         label: "Checking links & buttons…",    pct: 58, fn: checkLinksButtons },
+      { id: "contrast",      label: "Checking color contrast…",    pct: 66, fn: checkContrast },
+      { id: "inlineLang",     label: "Checking inline languages…",   pct: 74, fn: checkInlineLang },
+      { id: "duplicateIds",   label: "Checking duplicate element IDs…", pct: 80, fn: checkDuplicateIds },
+      { id: "reducedMotion",  label: "Auditing animations & motion…",  pct: 86, fn: checkReducedMotion },
+      { id: "touchTargets",   label: "Measuring touch target sizes…", pct: 92, fn: checkTouchTargets },
+      { id: "autoplayMedia",  label: "Checking autoplaying media…",  pct: 96, fn: checkAutoplayMedia },
+      { id: "reflow",         label: "Simulating 400% zoom reflow…",  pct: 99, fn: checkReflow },
     ];
 
     const results = {};
@@ -1070,11 +1465,29 @@
     for (const step of steps) {
       try { port.postMessage({ type: "PROGRESS", step: step.id, label: step.label, pct: step.pct }); } catch (_) {}
       await new Promise((r) => setTimeout(r, 280));
-      results[step.id] = step.fn();
+      results[step.id] = await step.fn();
     }
 
     // ── Weighted score calculation ──────────────────────────
-    const weights = { landmarks: 15, aria: 15, images: 10, forms: 15, keyboard: 15, headings: 10, links: 5, contrast: 15 };
+    // Suggested Rebalanced Weight Table (Sums to 100):
+    // landmarks (8), aria (10), images (8), forms (10), keyboard (10), headings (6), links (4), contrast (10)
+    // inlineLang (5), duplicateIds (5), reducedMotion (6), touchTargets (8), autoplayMedia (5), reflow (5)
+    const weights = {
+      landmarks: 8,
+      aria: 10,
+      images: 8,
+      forms: 10,
+      keyboard: 10,
+      headings: 6,
+      links: 4,
+      contrast: 10,
+      inlineLang: 5,
+      duplicateIds: 5,
+      reducedMotion: 6,
+      touchTargets: 8,
+      autoplayMedia: 5,
+      reflow: 5
+    };
     const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
     const weightedScore = Object.entries(weights).reduce((acc, [key, w]) => {
       return acc + (results[key]?.score ?? 100) * (w / totalWeight);
@@ -1099,26 +1512,38 @@
         data: {
           meta: results.meta,
           scores: {
-            overall:   Math.round(weightedScore),
-            landmarks: results.landmarks.score,
-            aria:      results.aria.score,
-            images:    results.images.score,
-            forms:     results.forms.score,
-            keyboard:  results.keyboard.score,
-            headings:  results.headings.score,
-            links:     results.links.score,
-            contrast:  results.contrast.score,
+            overall:        Math.round(weightedScore),
+            landmarks:      results.landmarks.score,
+            aria:           results.aria.score,
+            images:         results.images.score,
+            forms:          results.forms.score,
+            keyboard:       results.keyboard.score,
+            headings:       results.headings.score,
+            links:          results.links.score,
+            contrast:       results.contrast.score,
+            inlineLang:     results.inlineLang.score,
+            duplicateIds:   results.duplicateIds.score,
+            reducedMotion:  results.reducedMotion.score,
+            touchTargets:   results.touchTargets.score,
+            autoplayMedia:  results.autoplayMedia.score,
+            reflow:         results.reflow.score,
           },
           issues: allIssues,
           summary: { critical: criticalCount, warning: warningCount, info: infoCount, total: allIssues.length },
           foundCounts: {
-            landmarks: results.landmarks.found,
-            images:    results.images.counts,
-            forms:     results.forms.counts,
-            keyboard:  results.keyboard.counts,
-            headings:  results.headings.counts,
-            links:     results.links.counts,
-            contrast:  results.contrast.counts,
+            landmarks:      results.landmarks.found,
+            images:         results.images.counts,
+            forms:          results.forms.counts,
+            keyboard:       results.keyboard.counts,
+            headings:       results.headings.counts,
+            links:          results.links.counts,
+            contrast:       results.contrast.counts,
+            inlineLang:     results.inlineLang.counts,
+            duplicateIds:   results.duplicateIds.counts,
+            reducedMotion:  results.reducedMotion.counts,
+            touchTargets:   results.touchTargets.counts,
+            autoplayMedia:  results.autoplayMedia.counts,
+            reflow:         results.reflow.counts,
           },
         },
       });

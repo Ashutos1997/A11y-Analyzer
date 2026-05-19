@@ -250,6 +250,36 @@ const CATEGORIES = [
     label: "Contrast",
     icon: `<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM40,128a88,88,0,0,1,88-88V216A88,88,0,0,1,40,128Z"/></svg>`,
   },
+  {
+    key: "inlineLang",
+    label: "Inline Lang",
+    icon: `<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-124a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H128A8,8,0,0,1,120,92Zm0,48a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H128A8,8,0,0,1,120,140Z"/></svg>`,
+  },
+  {
+    key: "duplicateIds",
+    label: "Duplicate IDs",
+    icon: `<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M216,40H88A16,16,0,0,0,72,56V72H56A16,16,0,0,0,40,88V200a16,16,0,0,0,16,16H168a16,16,0,0,0,16-16V184h16a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM168,200H56V88H168V200Zm32-32H184V88a16,16,0,0,0-16-16H88V56H200Z"/></svg>`,
+  },
+  {
+    key: "reducedMotion",
+    label: "Reduced Motion",
+    icon: `<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M208,40H48A16,16,0,0,0,32,56V200a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V56A16,16,0,0,0,208,40Zm0,160H48V56H208V200ZM173.66,98.34a8,8,0,0,1,0,11.32l-32,32a8,8,0,0,1-11.32-11.32L156.69,104H96a8,8,0,0,1,0-16h60.69l-26.35-26.34a8,8,0,0,1,11.32-11.32ZM93.66,158.34,125.66,190.34a8,8,0,0,1-11.32,11.32L82.34,169.66a8,8,0,0,1,0-11.32l32-32a8,8,0,0,1,11.32,11.32Z"/></svg>`,
+  },
+  {
+    key: "touchTargets",
+    label: "Touch Targets",
+    icon: `<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M200,80a8,8,0,0,0-8,8v40a8,8,0,0,0,16,0V88A8,8,0,0,0,200,80Zm-40-16a8,8,0,0,0-8,8v56a8,8,0,0,0,16,0V72A8,8,0,0,0,160,64Zm-40-16a8,8,0,0,0-8,8v72a8,8,0,0,0,16,0V56A8,8,0,0,0,120,48ZM80,88V152.6L63.38,131.79a16,16,0,0,0-24.76,20.24L79,203.41A40,40,0,0,0,111.45,216H184a40,40,0,0,0,40-40V136a8,8,0,0,0-16,0v40a24,24,0,0,1-24,24H111.45a24,24,0,0,1-19.47-10L49.91,152.54a8,8,0,0,1,12.38-10.12L80,164.5V88A8,8,0,0,0,80,80ZM120,160h40a8,8,0,0,0,0-16H120a8,8,0,0,0,0,16Z"/></svg>`,
+  },
+  {
+    key: "autoplayMedia",
+    label: "Autoplay Media",
+    icon: `<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M160,32V224a8,8,0,0,1-12.91,6.31L77.09,176H32a16,16,0,0,1-16-16V96A16,16,0,0,1,32,80H77.09l70-54.31A8,8,0,0,1,160,32Zm-16,21.88L84.91,99.31A8,8,0,0,1,80,101H32v54H80a8,8,0,0,1,4.91,1.69L144,202.12ZM216,128a39.9,39.9,0,0,1-11.72,28.28,8,8,0,1,1-11.31-11.31A23.94,23.94,0,0,0,200,128a23.94,23.94,0,0,0-7.03-17,8,8,0,1,1,11.31-11.31A39.9,39.9,0,0,1,216,128Z"/></svg>`,
+  },
+  {
+    key: "reflow",
+    label: "Reflow Zoom",
+    icon: `<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,48H32A16,16,0,0,0,16,64V192a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V64A16,16,0,0,0,224,48Zm0,144H32V64H224V192Zm-24-72a8,8,0,0,1-8,8H64a8,8,0,0,1,0-16H192A8,8,0,0,1,200,120Z"/></svg>`,
+  },
 ];
 
 // ── Screen transitions ────────────────────────────────────────
@@ -816,7 +846,13 @@ function generateReport(data) {
       catImages: "Images",
       catHeadings: "Headings",
       catLinks: "Links & Buttons",
-      catContrast: "Contrast"
+      catContrast: "Contrast",
+      catInlineLang: "Inline Lang",
+      catDuplicateIds: "Duplicate IDs",
+      catReducedMotion: "Reduced Motion",
+      catTouchTargets: "Touch Targets",
+      catAutoplayMedia: "Autoplay Media",
+      catReflow: "Reflow Zoom"
     },
     ko: {
       reportTitle: "웹 접근성 정밀 진단 보고서",
@@ -874,7 +910,13 @@ function generateReport(data) {
       catImages: "이미지 대체 텍스트",
       catHeadings: "제목 구조 계층",
       catLinks: "링크 및 버튼 라벨",
-      catContrast: "색상 대비"
+      catContrast: "색상 대비",
+      catInlineLang: "인라인 언어 지정",
+      catDuplicateIds: "중복 ID 검사",
+      catReducedMotion: "동적 효과 제한",
+      catTouchTargets: "터치 및 클릭 대상",
+      catAutoplayMedia: "자동 재생 미디어",
+      catReflow: "반응형 리플로우"
     }
   };
 
