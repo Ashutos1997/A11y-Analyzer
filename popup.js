@@ -77,6 +77,7 @@ const translations = {
     loadingTouchTargets: "Measuring touch target sizes…",
     loadingAutoplayMedia: "Checking autoplaying media…",
     loadingReflow: "Simulating 400% zoom reflow…",
+    loadingReadingLevel: "Analyzing reading level…",
     errorRestrictedTitle: "Analysis Restricted",
     errorRestrictedDesc: "Standard browser security policies prevent extensions from running audits on system settings, internal pages, or the Web Store.",
     errorRestrictedBtn: "Visit Webpage",
@@ -125,6 +126,7 @@ const translations = {
     loadingTouchTargets: "터치 대상 영역 계측 중…",
     loadingAutoplayMedia: "자동 재생 미디어 체크 중…",
     loadingReflow: "400% 화면 확대 리플로우 시뮬레이션 중…",
+    loadingReadingLevel: "독해 난이도 분석 중…",
     errorRestrictedTitle: "분석 제한됨",
     errorRestrictedDesc: "브라우저 보안 정책으로 인해 시스템 설정, 내부 페이지 또는 확장 프로그램 웹 스토어에서는 접근성 진단을 실행할 수 없습니다.",
     errorRestrictedBtn: "웹페이지 방문",
@@ -464,6 +466,7 @@ function updateLoadingStatus(label) {
   else if (label === "Measuring touch target sizes…") displayLabel = t.loadingTouchTargets;
   else if (label === "Checking autoplaying media…") displayLabel = t.loadingAutoplayMedia;
   else if (label === "Simulating 400% zoom reflow…") displayLabel = t.loadingReflow;
+  else if (label === "Analyzing reading level…") displayLabel = t.loadingReadingLevel;
 
   elLoadingStatus.textContent = displayLabel;
 }
@@ -576,7 +579,8 @@ async function startAnalysis() {
       "Auditing animations & motion…",
       "Measuring touch target sizes…",
       "Checking autoplaying media…",
-      "Simulating 400% zoom reflow…"
+      "Simulating 400% zoom reflow…",
+      "Analyzing reading level…"
     ];
     for (let i = 0; i < labels.length; i++) {
       updateLoadingStatus(labels[i]);
