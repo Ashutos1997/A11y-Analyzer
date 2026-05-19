@@ -1440,24 +1440,316 @@
     };
   }
 
+  // 15. Reading Level Check (weight 5)
+  function countWordSyllables(word) {
+    word = word.toLowerCase().replace(/[^a-z]/g, "");
+    if (word.length <= 2) return 1;
+    
+    // Count vowel groups
+    const vowels = /[aeiouy]+/g;
+    const matches = word.match(vowels);
+    let count = matches ? matches.length : 0;
+    
+    // Subtract silent e at end of word
+    if (word.endsWith("e")) {
+      const beforeE = word.slice(-2, -1);
+      if (!"aeiouy".includes(beforeE)) {
+        count--;
+      }
+    }
+    
+    return Math.max(1, count);
+  }
+
+  async function checkReadingLevel() {
+    const issues = [];
+    let score = 100;
+    let deductions = 0;
+    const counts = { wordCount: 0, sentenceCount: 0, syllableCount: 0, fkgl: 0 };
+
+    const textElements = Array.from(document.querySelectorAll("p, li, td, dd")).filter(el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0 || isHiddenFromAT(el)) return false;
+      
+      let parent = el.parentElement;
+      while (parent) {
+        const tag = parent.tagName.toLowerCase();
+        if (tag === "nav" || tag === "header" || tag === "footer") return false;
+        parent = parent.parentElement;
+      }
+      return true;
+    });
+
+    const texts = textElements.map(el => el.textContent || "").join(" ").trim();
+    const words = texts.split(/\s+/).filter(w => w.length > 0);
+    
+    if (words.length < 50) {
+      issues.push({
+        severity: "info",
+        message: `Not enough body text to score (found ${words.length} words; minimum 50 words required).`,
+        wcag: "3.1.5",
+        element: "body"
+      });
+      return { score, issues, counts };
+    }
+
+    const sentences = texts.split(/[.!?](?:\s+|$)/).filter(s => s.trim().length > 0);
+    const sentenceCount = Math.max(1, sentences.length);
+    const wordCount = words.length;
+
+    let totalSyllables = 0;
+    words.forEach(word => {
+      totalSyllables += countWordSyllables(word);
+    });
+
+    const fkgl = 0.39 * (wordCount / sentenceCount) + 11.8 * (totalSyllables / wordCount) - 15.59;
+    const roundedFkgl = Math.round(fkgl * 10) / 10;
+
+    counts.wordCount = wordCount;
+    counts.sentenceCount = sentenceCount;
+    counts.syllableCount = totalSyllables;
+    counts.fkgl = roundedFkgl;
+
+    if (fkgl <= 8) {
+      score = 100;
+    } else if (fkgl <= 11) {
+      score = 85;
+      deductions = 15;
+      issues.push({
+        severity: "warning",
+        message: `Reading level is approximately Grade ${roundedFkgl} (FKGL score: ${roundedFkgl}, words: ${wordCount}). Aim for Grade 8 or below for broad accessibility.`,
+        wcag: "3.1.5",
+        element: "body"
+      });
+    } else if (fkgl <= 14) {
+      score = 70;
+      deductions = 30;
+      issues.push({
+        severity: "warning",
+        message: `Reading level is approximately Grade ${roundedFkgl} (FKGL score: ${roundedFkgl}, words: ${wordCount}). Aim for Grade 8 or below for broad accessibility.`,
+        wcag: "3.1.5",
+        element: "body"
+      });
+    } else {
+      score = 50;
+      deductions = 50;
+      issues.push({
+        severity: "critical",
+        message: `Reading level is approximately Grade ${roundedFkgl} (FKGL score: ${roundedFkgl}, words: ${wordCount}). Aim for Grade 8 or below for broad accessibility.`,
+        wcag: "3.1.5",
+        element: "body"
+      });
+    }
+
+    score = Math.max(0, 100 - Math.min(deductions, 100));
+    return { score, issues, counts };
+  }
+
+  // ── Focus Visualizer overlay states ──────────────────────
+  let focusOverlayActive = false;
+  let inferredFocusOrder = [];
+
+  function startFocusOverlay(port) {
+    focusOverlayActive = true;
+    inferredFocusOrder = [];
+    
+    let overlay = document.getElementById("a11y-focus-overlay");
+    if (overlay) overlay.remove();
+    
+    overlay = document.createElement("div");
+    overlay.id = "a11y-focus-overlay";
+    overlay.style.position = "absolute";
+    overlay.style.top = "0";
+    overlay.style.left = "0";
+    overlay.style.width = "100%";
+    overlay.style.height = "100%";
+    overlay.style.pointerEvents = "none";
+    overlay.style.zIndex = "999999";
+    
+    const bodyStyle = window.getComputedStyle(document.body);
+    if (bodyStyle.position === "static") {
+      document.body.style.position = "relative";
+    }
+    
+    document.body.appendChild(overlay);
+    
+    const focusable = Array.from(document.querySelectorAll(
+      `a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [role="button"], [role="link"]`
+    )).filter(el => {
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && !isHiddenFromAT(el);
+    });
+    
+    const elementsWithIndex = focusable.map((el, index) => ({ el, index }));
+    elementsWithIndex.sort((a, b) => {
+      const tabA = parseInt(a.el.getAttribute("tabindex") || "0", 10);
+      const tabB = parseInt(b.el.getAttribute("tabindex") || "0", 10);
+      
+      const hasPosA = tabA > 0;
+      const hasPosB = tabB > 0;
+      
+      if (hasPosA && !hasPosB) return -1;
+      if (!hasPosA && hasPosB) return 1;
+      if (hasPosA && hasPosB) {
+        if (tabA !== tabB) return tabA - tabB;
+      }
+      return a.index - b.index;
+    });
+    
+    inferredFocusOrder = elementsWithIndex.map(x => x.el);
+    
+    inferredFocusOrder.forEach((el, index) => {
+      const rect = el.getBoundingClientRect();
+      const top = rect.top + window.pageYOffset;
+      const left = rect.left + window.pageXOffset;
+      
+      const badge = document.createElement("div");
+      badge.textContent = index + 1;
+      badge.className = "a11y-focus-badge";
+      badge.style.position = "absolute";
+      badge.style.top = `${top}px`;
+      badge.style.left = `${left}px`;
+      badge.style.width = "20px";
+      badge.style.height = "20px";
+      badge.style.borderRadius = "50%";
+      badge.style.backgroundColor = "#3730A3";
+      badge.style.color = "#FFFFFF";
+      badge.style.fontSize = "11px";
+      badge.style.fontFamily = "monospace";
+      badge.style.fontWeight = "bold";
+      badge.style.display = "flex";
+      badge.style.alignItems = "center";
+      badge.style.justifyContent = "center";
+      badge.style.boxShadow = "0 2px 4px rgba(0,0,0,0.3)";
+      badge.style.transform = "translate(-50%, -50%)";
+      badge.style.zIndex = "999999";
+      
+      overlay.appendChild(badge);
+    });
+    
+    let currentIndex = 0;
+    function animateScroll() {
+      if (!focusOverlayActive || currentIndex >= inferredFocusOrder.length) {
+        if (port) {
+          try {
+            port.postMessage({ type: "FOCUS_OVERLAY_DONE", count: inferredFocusOrder.length });
+          } catch (_) {}
+        }
+        return;
+      }
+      
+      const el = inferredFocusOrder[currentIndex];
+      el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+      
+      currentIndex++;
+      setTimeout(animateScroll, 300);
+    }
+    
+    animateScroll();
+  }
+
+  async function startTabSimulation(port) {
+    const issues = [];
+    const actualFocusOrder = [];
+    
+    function onFocusCapture(e) {
+      if (e.target && e.target !== document && e.target !== window && e.target !== document.body && e.target !== document.documentElement) {
+        if (!actualFocusOrder.includes(e.target)) {
+          actualFocusOrder.push(e.target);
+        }
+      }
+    }
+    
+    document.addEventListener("focus", onFocusCapture, true);
+    
+    if (inferredFocusOrder.length > 0) {
+      inferredFocusOrder[0].focus();
+      actualFocusOrder.push(inferredFocusOrder[0]);
+    }
+    
+    let simulatedSteps = 0;
+    const maxSteps = Math.min(50, inferredFocusOrder.length);
+    
+    for (let i = 0; i < maxSteps; i++) {
+      const currentActive = document.activeElement;
+      
+      const keydownEvent = new KeyboardEvent("keydown", {
+        key: "Tab",
+        code: "Tab",
+        keyCode: 9,
+        which: 9,
+        bubbles: true,
+        cancelable: true
+      });
+      
+      if (currentActive) {
+        currentActive.dispatchEvent(keydownEvent);
+      }
+      
+      await new Promise(r => setTimeout(r, 150));
+      
+      if (document.activeElement === currentActive) {
+        const nextIndex = inferredFocusOrder.indexOf(currentActive) + 1;
+        if (nextIndex < inferredFocusOrder.length) {
+          inferredFocusOrder[nextIndex].focus();
+        }
+      }
+    }
+    
+    document.removeEventListener("focus", onFocusCapture, true);
+    
+    let discrepancies = 0;
+    actualFocusOrder.forEach((el, index) => {
+      const inferredIdx = inferredFocusOrder.indexOf(el);
+      if (inferredIdx === -1) {
+        discrepancies++;
+        issues.push({
+          severity: "warning",
+          message: `Simulated focus reached element ${getSelector(el)} which was not found in DOM-inferred focus order.`,
+          wcag: "2.4.3",
+          element: getSelector(el)
+        });
+      } else if (inferredIdx !== index) {
+        discrepancies++;
+        issues.push({
+          severity: "warning",
+          message: `Focus sequence mismatch: simulated order placed ${getSelector(el)} at position ${index + 1}, but DOM-inferred order expected it at position ${inferredIdx + 1}.`,
+          wcag: "2.4.3",
+          element: getSelector(el)
+        });
+      }
+    });
+    
+    if (port) {
+      try {
+        port.postMessage({
+          type: "TAB_SIMULATION_DONE",
+          issues: issues,
+          discrepancies: discrepancies
+        });
+      } catch (_) {}
+    }
+  }
+
   // ── Main runner ──────────────────────────────────────────
   async function runAnalysis(port) {
     const steps = [
       { id: "meta",          label: "Reading page metadata…",       pct: 4,  fn: getPageMeta },
       { id: "landmarks",     label: "Checking landmark regions…",   pct: 10, fn: checkLandmarks },
-      { id: "aria",          label: "Auditing ARIA attributes…",    pct: 18, fn: checkARIA },
-      { id: "images",        label: "Checking images & media…",     pct: 26, fn: checkImages },
-      { id: "forms",         label: "Analyzing form accessibility…", pct: 34, fn: checkForms },
-      { id: "keyboard",      label: "Testing keyboard support…",    pct: 42, fn: checkKeyboard },
-      { id: "headings",      label: "Auditing heading structure…",  pct: 50, fn: checkHeadings },
-      { id: "links",         label: "Checking links & buttons…",    pct: 58, fn: checkLinksButtons },
-      { id: "contrast",      label: "Checking color contrast…",    pct: 66, fn: checkContrast },
-      { id: "inlineLang",     label: "Checking inline languages…",   pct: 74, fn: checkInlineLang },
-      { id: "duplicateIds",   label: "Checking duplicate element IDs…", pct: 80, fn: checkDuplicateIds },
-      { id: "reducedMotion",  label: "Auditing animations & motion…",  pct: 86, fn: checkReducedMotion },
-      { id: "touchTargets",   label: "Measuring touch target sizes…", pct: 92, fn: checkTouchTargets },
-      { id: "autoplayMedia",  label: "Checking autoplaying media…",  pct: 96, fn: checkAutoplayMedia },
-      { id: "reflow",         label: "Simulating 400% zoom reflow…",  pct: 99, fn: checkReflow },
+      { id: "aria",          label: "Auditing ARIA attributes…",    pct: 16, fn: checkARIA },
+      { id: "images",        label: "Checking images & media…",     pct: 22, fn: checkImages },
+      { id: "forms",         label: "Analyzing form accessibility…", pct: 28, fn: checkForms },
+      { id: "keyboard",      label: "Testing keyboard support…",    pct: 34, fn: checkKeyboard },
+      { id: "headings",      label: "Auditing heading structure…",  pct: 40, fn: checkHeadings },
+      { id: "links",         label: "Checking links & buttons…",    pct: 46, fn: checkLinksButtons },
+      { id: "contrast",      label: "Checking color contrast…",    pct: 52, fn: checkContrast },
+      { id: "inlineLang",     label: "Checking inline languages…",   pct: 58, fn: checkInlineLang },
+      { id: "duplicateIds",   label: "Checking duplicate element IDs…", pct: 64, fn: checkDuplicateIds },
+      { id: "reducedMotion",  label: "Auditing animations & motion…",  pct: 70, fn: checkReducedMotion },
+      { id: "touchTargets",   label: "Measuring touch target sizes…", pct: 76, fn: checkTouchTargets },
+      { id: "autoplayMedia",  label: "Checking autoplaying media…",  pct: 82, fn: checkAutoplayMedia },
+      { id: "reflow",         label: "Simulating 400% zoom reflow…",  pct: 88, fn: checkReflow },
+      { id: "readingLevel",   label: "Analyzing reading level…",      pct: 95, fn: checkReadingLevel },
     ];
 
     const results = {};
@@ -1470,23 +1762,24 @@
 
     // ── Weighted score calculation ──────────────────────────
     // Suggested Rebalanced Weight Table (Sums to 100):
-    // landmarks (8), aria (10), images (8), forms (10), keyboard (10), headings (6), links (4), contrast (10)
-    // inlineLang (5), duplicateIds (5), reducedMotion (6), touchTargets (8), autoplayMedia (5), reflow (5)
+    // landmarks (8), aria (9), images (8), forms (9), keyboard (9), headings (6), links (4), contrast (9)
+    // inlineLang (5), duplicateIds (5), reducedMotion (6), touchTargets (7), autoplayMedia (5), reflow (5), readingLevel (5)
     const weights = {
       landmarks: 8,
-      aria: 10,
+      aria: 9,
       images: 8,
-      forms: 10,
-      keyboard: 10,
+      forms: 9,
+      keyboard: 9,
       headings: 6,
       links: 4,
-      contrast: 10,
+      contrast: 9,
       inlineLang: 5,
       duplicateIds: 5,
       reducedMotion: 6,
-      touchTargets: 8,
+      touchTargets: 7,
       autoplayMedia: 5,
-      reflow: 5
+      reflow: 5,
+      readingLevel: 5
     };
     const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
     const weightedScore = Object.entries(weights).reduce((acc, [key, w]) => {
@@ -1527,6 +1820,7 @@
             touchTargets:   results.touchTargets.score,
             autoplayMedia:  results.autoplayMedia.score,
             reflow:         results.reflow.score,
+            readingLevel:   results.readingLevel.score,
           },
           issues: allIssues,
           summary: { critical: criticalCount, warning: warningCount, info: infoCount, total: allIssues.length },
@@ -1544,6 +1838,7 @@
             touchTargets:   results.touchTargets.counts,
             autoplayMedia:  results.autoplayMedia.counts,
             reflow:         results.reflow.counts,
+            readingLevel:   results.readingLevel.counts,
           },
         },
       });
@@ -1564,7 +1859,22 @@
     port.onMessage.addListener((msg) => {
       if (msg.type === "START_ANALYSIS") {
         runAnalysis(port);
+      } else if (msg.type === "START_FOCUS_OVERLAY") {
+        startFocusOverlay(port);
+      } else if (msg.type === "START_TAB_SIMULATION") {
+        startTabSimulation(port);
+      } else if (msg.type === "CLEAR_FOCUS_OVERLAY") {
+        focusOverlayActive = false;
+        const overlay = document.getElementById("a11y-focus-overlay");
+        if (overlay) overlay.remove();
+        try { port.postMessage({ type: "FOCUS_OVERLAY_CLEARED" }); } catch (_) {}
       }
+    });
+
+    port.onDisconnect.addListener(() => {
+      focusOverlayActive = false;
+      const overlay = document.getElementById("a11y-focus-overlay");
+      if (overlay) overlay.remove();
     });
   });
 
