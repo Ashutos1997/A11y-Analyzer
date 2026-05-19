@@ -84,14 +84,20 @@ To export as PDF: open it → Ctrl+P → Save as PDF.
 
 | Category       | Weight | What's analyzed |
 |----------------|--------|-----------------|
-| Keyboard Nav   | 15%    | tabindex order, skip links, focus indicators, clickable-div traps |
-| ARIA           | 15%    | role validity, required attributes, aria-hidden misuse, missing names |
-| Landmarks      | 15%    | main, nav, header, footer presence and labeling |
-| Forms          | 15%    | label associations, aria-required, fieldset grouping |
-| Contrast       | 15%    | programmatic color contrast ratio of visible text elements against backgrounds |
-| Images         | 10%    | alt attributes, empty vs descriptive alt, SVG labels |
-| Headings       | 10%    | h1 presence, heading hierarchy, skipped levels |
-| Links/Buttons  | 5%     | generic text, empty links, new-tab disclosure |
+| Keyboard Nav   | 10%    | tabindex order, skip links, focus indicators, clickable-div traps |
+| ARIA           | 10%    | role validity, required attributes, aria-hidden misuse, missing accessible names |
+| Landmarks      | 8%     | main, nav, header, footer presence and labeling |
+| Forms          | 10%    | label associations, aria-required, fieldset grouping |
+| Contrast       | 10%    | color contrast ratios, ancestor opacity blending, viewport-first element prioritization |
+| Images         | 8%     | alt attributes, empty vs descriptive alt, SVG accessibility labels |
+| Headings       | 6%     | h1 presence, heading hierarchy, skipped structural levels |
+| Links/Buttons  | 4%     | generic label text, empty anchor links, new-tab/window disclosure |
+| Inline Lang    | 5%     | lang attribute mismatch on foreign language text (FR, DE, ES, PT, IT) |
+| Duplicate IDs  | 5%     | duplicate element IDs, escalating when referenced by landmarks/labels |
+| Reduced Motion | 6%     | active animations/transitions lacking prefers-reduced-motion media queries |
+| Touch Targets  | 8%     | bounding box interactive targets less than 44x44px (down to 24px) |
+| Autoplay Media | 5%     | video/audio tags autoplaying without mute or controls |
+| Reflow Zoom    | 5%     | simulated 400% zoom (320px width) horizontal scroll and pushed-off content |
 
 ---
 
