@@ -136,21 +136,6 @@ a11y-extension/
 ├── README-ko.md       한국어 설명서 및 설치 가이드 문서
 ├── icons/             확장 프로그램 아이콘 폴더
 │   └── icon.svg       모든 아이콘 규격 대응 단일 벡터 SVG 아이콘
-├── images/            설명서 삽입용 제품 대시보드 및 오프라인 보고서 스크린샷 폴더
-│   ├── screen1_v5.png
-│   ├── screen1_ko_v5.png
-│   ├── screen2_v5.png
-│   ├── screen2_ko_v5.png
-│   ├── screen3_v5.png
-│   ├── screen3_ko_v5.png
-│   ├── report_summary_v5.png
-│   ├── report_summary_ko_v5.png
-│   ├── report_stats_v5.png
-│   ├── report_stats_ko_v5.png
-│   ├── report_categories_v5.png
-│   ├── report_categories_ko_v5.png
-│   ├── report_issues_v5.png
-│   └── report_issues_ko_v5.png
 └── phosphor/          오프라인 폰트 전용 Phosphor 아이콘 및 웹폰트 리소스 폴더
     ├── style.css
     ├── Phosphor.ttf
