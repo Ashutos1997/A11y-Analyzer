@@ -126,6 +126,7 @@ To export as PDF: open it → Ctrl+P → Save as PDF.
 ```
 a11y-extension/
 ├── manifest.json      Chrome extension manifest (MV3)
+├── LICENSE            MIT open-source license terms
 ├── popup.html         Main HTML popup scaffolding (All 3 screens)
 ├── popup.css          Core application styling (Alabaster, Sand & Indigo)
 ├── animation.css      Screen 2 high-fidelity scanning animation styles
@@ -143,3 +144,9 @@ a11y-extension/
     ├── Phosphor.woff
     └── Phosphor.woff2
 ```
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
