@@ -71,6 +71,12 @@ const translations = {
     loadingHeadings: "Auditing heading structure…",
     loadingLinks: "Checking links & buttons…",
     loadingContrast: "Checking color contrast…",
+    loadingInlineLang: "Checking inline languages…",
+    loadingDuplicateIds: "Checking duplicate element IDs…",
+    loadingReducedMotion: "Auditing animations & motion…",
+    loadingTouchTargets: "Measuring touch target sizes…",
+    loadingAutoplayMedia: "Checking autoplaying media…",
+    loadingReflow: "Simulating 400% zoom reflow…",
     errorRestrictedTitle: "Analysis Restricted",
     errorRestrictedDesc: "Standard browser security policies prevent extensions from running audits on system settings, internal pages, or the Web Store.",
     errorRestrictedBtn: "Visit Webpage",
@@ -113,6 +119,12 @@ const translations = {
     loadingHeadings: "제목 구조 진단 중…",
     loadingLinks: "링크 및 버튼 검사 중…",
     loadingContrast: "색상 대비 진단 중…",
+    loadingInlineLang: "인라인 언어 지정 검사 중…",
+    loadingDuplicateIds: "중복 요소 ID 검사 중…",
+    loadingReducedMotion: "동적 효과 및 모션 검사 중…",
+    loadingTouchTargets: "터치 대상 영역 계측 중…",
+    loadingAutoplayMedia: "자동 재생 미디어 체크 중…",
+    loadingReflow: "400% 화면 확대 리플로우 시뮬레이션 중…",
     errorRestrictedTitle: "분석 제한됨",
     errorRestrictedDesc: "브라우저 보안 정책으로 인해 시스템 설정, 내부 페이지 또는 확장 프로그램 웹 스토어에서는 접근성 진단을 실행할 수 없습니다.",
     errorRestrictedBtn: "웹페이지 방문",
@@ -188,7 +200,33 @@ function applyLanguage(lang) {
   if (btnRerunText) btnRerunText.textContent = t.btnRerun;
   if (btnDownloadText) btnDownloadText.textContent = t.btnDownload;
 
-  // 4. Translate dynamic labels or load page meta again
+  // 4. Translate restricted/error views if visible
+  const elScannerError = document.getElementById("scanner-error");
+  if (elScannerError && elScannerError.style.display !== "none") {
+    const elScannerErrorTitle = document.getElementById("scanner-error-title");
+    const elScannerErrorDesc  = document.getElementById("scanner-error-desc");
+    const elBtnErrorText      = document.getElementById("btn-error-text");
+    
+    const url = activeTab?.url || "";
+    const isRestricted = url.startsWith("chrome://") || 
+                         url.startsWith("whale://") || 
+                         url.startsWith("edge://") || 
+                         url.startsWith("about:") || 
+                         url.includes("chromewebstore.google.com") || 
+                         url.includes("chrome.google.com/webstore");
+                         
+    if (isRestricted) {
+      if (elScannerErrorTitle) elScannerErrorTitle.textContent = t.errorRestrictedTitle;
+      if (elScannerErrorDesc) elScannerErrorDesc.textContent = t.errorRestrictedDesc;
+      if (elBtnErrorText) elBtnErrorText.textContent = t.errorRestrictedBtn;
+    } else {
+      if (elScannerErrorTitle) elScannerErrorTitle.textContent = t.errorInterruptedTitle;
+      if (elScannerErrorDesc) elScannerErrorDesc.textContent = t.errorInterruptedDesc;
+      if (elBtnErrorText) elBtnErrorText.textContent = t.errorInterruptedBtn;
+    }
+  }
+
+  // 5. Translate dynamic labels or load page meta again
   if (auditData) {
     renderResults(auditData);
   } else {
@@ -420,6 +458,12 @@ function updateLoadingStatus(label) {
   else if (label === "Auditing heading structure…") displayLabel = t.loadingHeadings;
   else if (label === "Checking links & buttons…") displayLabel = t.loadingLinks;
   else if (label === "Checking color contrast…") displayLabel = t.loadingContrast;
+  else if (label === "Checking inline languages…") displayLabel = t.loadingInlineLang;
+  else if (label === "Checking duplicate element IDs…") displayLabel = t.loadingDuplicateIds;
+  else if (label === "Auditing animations & motion…") displayLabel = t.loadingReducedMotion;
+  else if (label === "Measuring touch target sizes…") displayLabel = t.loadingTouchTargets;
+  else if (label === "Checking autoplaying media…") displayLabel = t.loadingAutoplayMedia;
+  else if (label === "Simulating 400% zoom reflow…") displayLabel = t.loadingReflow;
 
   elLoadingStatus.textContent = displayLabel;
 }
@@ -525,27 +569,42 @@ async function startAnalysis() {
       "Analyzing form accessibility…",
       "Testing keyboard support…",
       "Auditing heading structure…",
-      "Checking links & buttons…"
+      "Checking links & buttons…",
+      "Checking color contrast…",
+      "Checking inline languages…",
+      "Checking duplicate element IDs…",
+      "Auditing animations & motion…",
+      "Measuring touch target sizes…",
+      "Checking autoplaying media…",
+      "Simulating 400% zoom reflow…"
     ];
     for (let i = 0; i < labels.length; i++) {
       updateLoadingStatus(labels[i]);
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 120));
     }
     const mockData = {
       scores: {
-        overall: 88,
-        keyboard: 90,
-        aria: 80,
+        overall: 84,
+        keyboard: 80,
+        aria: 70,
         landmarks: 100,
-        forms: 85,
-        images: 90,
-        headings: 80,
-        links: 95
+        forms: 90,
+        images: 85,
+        headings: 90,
+        links: 95,
+        contrast: 85,
+        inlineLang: 100,
+        duplicateIds: 85,
+        reducedMotion: 100,
+        touchTargets: 75,
+        autoplayMedia: 100,
+        reflow: 90
       },
       summary: {
         critical: 0,
-        warning: 3,
-        info: 2
+        warning: 4,
+        info: 2,
+        total: 6
       },
       meta: {
         domain: "example.com",
@@ -559,12 +618,24 @@ async function startAnalysis() {
         images: 3,
         headings: 3,
         forms: 2,
-        links: 5
+        links: 5,
+        landmarks: 4,
+        keyboard: 12,
+        contrast: 15,
+        inlineLang: 1,
+        duplicateIds: 2,
+        reducedMotion: 0,
+        touchTargets: 4,
+        autoplayMedia: 0,
+        reflow: 0
       },
       issues: [
-        { severity: "warning", message: "Button is missing explicit type attribute", wcag: "4.1.2", element: "button" },
-        { severity: "warning", message: "Image is missing alt description", wcag: "1.1.1", element: "img" },
-        { severity: "info", message: "No skip navigation link found", wcag: "2.4.1", element: "body" }
+        { severity: "warning", message: "Button is missing explicit type attribute", wcag: "4.1.2", element: "button", category: "forms" },
+        { severity: "warning", message: "Image is missing alt description", wcag: "1.1.1", element: "img", category: "images" },
+        { severity: "warning", message: "Touch target size is too small (32x28px)", wcag: "2.5.5", element: "a.nav-link", category: "touchTargets" },
+        { severity: "warning", message: "Duplicate ID \"search-input\" detected (2 occurrences)", wcag: "4.1.1", element: "input#search-input", category: "duplicateIds" },
+        { severity: "info", message: "No skip navigation link found", wcag: "2.4.1", element: "body", category: "keyboard" },
+        { severity: "info", message: "Skipped 2 elements due to unparseable color formats", wcag: "1.4.3", element: "Contrast Checker", category: "contrast" }
       ]
     };
     auditData = mockData;
