@@ -128,17 +128,88 @@
     return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
   }
 
+  function isInViewport(el) {
+    const rect = el.getBoundingClientRect();
+    const vHeight = window.innerHeight || document.documentElement.clientHeight;
+    const vWidth = window.innerWidth || document.documentElement.clientWidth;
+    return (
+      rect.top < vHeight &&
+      rect.bottom > 0 &&
+      rect.left < vWidth &&
+      rect.right > 0 &&
+      rect.width > 0 &&
+      rect.height > 0
+    );
+  }
+
+  function getPlaceholderColor(el) {
+    const uniqueId = "placeholder-audit-" + Math.random().toString(36).slice(2, 9);
+    el.setAttribute("data-placeholder-check", uniqueId);
+    
+    const style = document.createElement("style");
+    style.textContent = `
+      [data-placeholder-check="${uniqueId}"]::placeholder {
+        content: "detect";
+      }
+      [data-placeholder-check="${uniqueId}"]::-webkit-input-placeholder {
+        content: "detect";
+      }
+    `;
+    document.head.appendChild(style);
+    
+    let color = null;
+    try {
+      const comp = window.getComputedStyle(el, "::placeholder");
+      if (comp && comp.color) {
+        color = comp.color;
+      }
+    } catch (_) {}
+    
+    style.remove();
+    el.removeAttribute("data-placeholder-check");
+    return color;
+  }
+
   function getElementBgColor(el) {
+    const path = [];
     let node = el;
     while (node) {
-      const bg = getComputedStyle(node).backgroundColor;
-      if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
-        const match = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-        if (match) return [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])];
-      }
+      path.push(node);
       node = node.parentElement;
     }
-    return [255, 255, 255]; // default fallback
+    
+    let r = 255, g = 255, b = 255;
+    
+    for (let i = path.length - 1; i >= 0; i--) {
+      const current = path[i];
+      const style = getComputedStyle(current);
+      const bg = style.backgroundColor;
+      let opacity = parseFloat(style.opacity);
+      if (isNaN(opacity)) opacity = 1.0;
+      
+      if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
+        const match = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d?\.\d+|\d+))?/);
+        if (match) {
+          const layerR = parseInt(match[1], 10);
+          const layerG = parseInt(match[2], 10);
+          const layerB = parseInt(match[3], 10);
+          const layerA = match[4] !== undefined ? parseFloat(match[4]) : 1.0;
+          
+          const alpha = layerA * opacity;
+          
+          if (alpha > 0) {
+            r = Math.round(layerR * alpha + r * (1 - alpha));
+            g = Math.round(layerG * alpha + g * (1 - alpha));
+            b = Math.round(layerB * alpha + b * (1 - alpha));
+          }
+        }
+      } else if (opacity < 1.0) {
+        r = Math.round(r * opacity + 255 * (1 - opacity));
+        g = Math.round(g * opacity + 255 * (1 - opacity));
+        b = Math.round(b * opacity + 255 * (1 - opacity));
+      }
+    }
+    return [r, g, b];
   }
 
   // ── Checks ───────────────────────────────────────────────
@@ -815,52 +886,146 @@
     let deductions = 0;
     let textTested = 0;
     let contrastFailures = 0;
+    let skippedElements = 0;
 
     const textElements = Array.from(document.querySelectorAll("p, li, label, td, th, h1, h2, h3, h4, h5, h6, a[href], button"));
     
-    // Sample up to 100 visible text elements to ensure high performance & coverage
+    // Filter visible elements
     const visibleTextElements = textElements.filter(el => {
       if (isHiddenFromAT(el)) return false;
       const rect = el.getBoundingClientRect();
       return rect.width > 0 && rect.height > 0;
-    }).slice(0, 100);
+    });
 
-    visibleTextElements.forEach((el) => {
-      const style = getComputedStyle(el);
-      const color = style.color;
-      
-      const fgMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-      if (fgMatch) {
-        textTested++;
-        const fgRgb = [parseInt(fgMatch[1]), parseInt(fgMatch[2]), parseInt(fgMatch[3])];
-        const bgRgb = getElementBgColor(el);
-        
-        const ratio = getContrastRatio(fgRgb, bgRgb);
-        
-        // Determine threshold based on size
-        const fontSizeStr = style.fontSize;
-        const fontSizePx = parseFloat(fontSizeStr);
-        const fontWeight = style.fontWeight;
-        const isBold = fontWeight === "bold" || parseInt(fontWeight, 10) >= 700;
-        
-        // WCAG Large text: >= 24px (18pt) or bold >= 18.5px (14pt)
-        const isLarge = fontSizePx >= 24 || (fontSizePx >= 18.5 && isBold);
-        const threshold = isLarge ? 3.0 : 4.5;
-        
-        if (ratio < threshold) {
-          contrastFailures++;
-          const roundedRatio = Math.round(ratio * 100) / 100;
-          issues.push({
-            severity: ratio < 3.0 ? "critical" : "warning",
-            message: `Low text color contrast ratio (${roundedRatio}:1). Minimum required for this text size is ${threshold}:1. Check foreground ${color} on background rgb(${bgRgb.join(",")}).`,
-            wcag: "1.4.3",
-            element: getSelector(el),
-            snippet: getHtmlSnippet(el)
-          });
-          deductions += ratio < 3.0 ? 8 : 4;
-        }
+    // Partition by viewport status
+    const inViewport = [];
+    const outViewport = [];
+    visibleTextElements.forEach(el => {
+      if (isInViewport(el)) {
+        inViewport.push(el);
+      } else {
+        outViewport.push(el);
       }
     });
+
+    // Take up to 100 visible text elements prioritizing in-viewport elements
+    const sampledElements = [...inViewport, ...outViewport].slice(0, 100);
+
+    sampledElements.forEach((el) => {
+      try {
+        const style = getComputedStyle(el);
+        const color = style.color;
+        
+        const fgMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d?\.\d+|\d+))?/);
+        if (fgMatch) {
+          const rawFgR = parseInt(fgMatch[1], 10);
+          const rawFgG = parseInt(fgMatch[2], 10);
+          const rawFgB = parseInt(fgMatch[3], 10);
+          const rawFgA = fgMatch[4] !== undefined ? parseFloat(fgMatch[4]) : 1.0;
+          
+          const bgRgb = getElementBgColor(el);
+          
+          // Blend foreground against background if foreground is semi-transparent
+          let fgRgb = [rawFgR, rawFgG, rawFgB];
+          if (rawFgA < 1.0) {
+            fgRgb = [
+              Math.round(rawFgR * rawFgA + bgRgb[0] * (1 - rawFgA)),
+              Math.round(rawFgG * rawFgA + bgRgb[1] * (1 - rawFgA)),
+              Math.round(rawFgB * rawFgA + bgRgb[2] * (1 - rawFgA))
+            ];
+          }
+          
+          const ratio = getContrastRatio(fgRgb, bgRgb);
+          textTested++;
+          
+          // Determine threshold based on size
+          const fontSizeStr = style.fontSize;
+          const fontSizePx = parseFloat(fontSizeStr);
+          const fontWeight = style.fontWeight;
+          const isBold = fontWeight === "bold" || parseInt(fontWeight, 10) >= 700;
+          
+          // WCAG Large text: >= 24px (18pt) or bold >= 18.5px (14pt)
+          const isLarge = fontSizePx >= 24 || (fontSizePx >= 18.5 && isBold);
+          const threshold = isLarge ? 3.0 : 4.5;
+          
+          if (ratio < threshold) {
+            contrastFailures++;
+            const roundedRatio = Math.round(ratio * 100) / 100;
+            issues.push({
+              severity: ratio < 3.0 ? "critical" : "warning",
+              message: `Low text color contrast ratio (${roundedRatio}:1). Minimum required for this text size is ${threshold}:1. Check foreground ${color} on background rgb(${bgRgb.join(",")}).`,
+              wcag: "1.4.3",
+              element: getSelector(el),
+              snippet: getHtmlSnippet(el)
+            });
+            deductions += ratio < 3.0 ? 8 : 4;
+          }
+        } else {
+          skippedElements++;
+        }
+      } catch (_) {
+        skippedElements++;
+      }
+    });
+
+    // Check placeholder contrast for visible inputs and textareas
+    const placeholders = Array.from(document.querySelectorAll("input[placeholder], textarea[placeholder]")).filter(el => {
+      if (isHiddenFromAT(el)) return false;
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    });
+
+    placeholders.slice(0, 30).forEach((input) => {
+      try {
+        const color = getPlaceholderColor(input);
+        if (color) {
+          const fgMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d?\.\d+|\d+))?/);
+          if (fgMatch) {
+            const rawFgR = parseInt(fgMatch[1], 10);
+            const rawFgG = parseInt(fgMatch[2], 10);
+            const rawFgB = parseInt(fgMatch[3], 10);
+            const rawFgA = fgMatch[4] !== undefined ? parseFloat(fgMatch[4]) : 1.0;
+            
+            const bgRgb = getElementBgColor(input);
+            
+            let fgRgb = [rawFgR, rawFgG, rawFgB];
+            if (rawFgA < 1.0) {
+              fgRgb = [
+                Math.round(rawFgR * rawFgA + bgRgb[0] * (1 - rawFgA)),
+                Math.round(rawFgG * rawFgA + bgRgb[1] * (1 - rawFgA)),
+                Math.round(rawFgB * rawFgA + bgRgb[2] * (1 - rawFgA))
+              ];
+            }
+            
+            const ratio = getContrastRatio(fgRgb, bgRgb);
+            
+            // Standard placeholder text threshold: 4.5:1
+            if (ratio < 4.5) {
+              const roundedRatio = Math.round(ratio * 100) / 100;
+              issues.push({
+                severity: "warning",
+                message: `Low contrast ratio on form placeholder text (${roundedRatio}:1). Minimum required for placeholders is 4.5:1.`,
+                wcag: "1.4.3",
+                element: getSelector(input),
+                snippet: getHtmlSnippet(input)
+              });
+              deductions += 4;
+            }
+          }
+        }
+      } catch (_) {}
+    });
+
+    const totalSampled = textTested + skippedElements;
+    if (skippedElements > 0.1 * totalSampled && totalSampled > 0) {
+      issues.push({
+        severity: "info",
+        message: `Skipped ${skippedElements} elements due to unparseable color formats (e.g. color-mix() or relative CSS color values). Consider checking color contrast manually for these nodes.`,
+        wcag: "1.4.3",
+        element: "Contrast Checker",
+        snippet: "N/A"
+      });
+    }
 
     score = Math.max(0, 100 - deductions);
     return { score, issues, counts: { textTested, contrastFailures } };
