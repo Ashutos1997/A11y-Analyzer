@@ -17,13 +17,13 @@
   <tbody>
     <tr>
       <td valign="top" align="center" style="width: 33.33%;">
-        <img src="images/screen1_ko_v5.png" width="100%" style="max-width: 220px; display: block;" alt="화면 1: 대시보드" />
+        <img src="images/screen1_ko_v6.png" width="100%" style="max-width: 220px; display: block;" alt="화면 1: 대시보드" />
       </td>
       <td valign="top" align="center" style="width: 33.33%;">
-        <img src="images/screen2_ko_v5.png" width="100%" style="max-width: 220px; display: block;" alt="화면 2: 정밀 진단 중" />
+        <img src="images/screen2_ko_v6.png" width="100%" style="max-width: 220px; display: block;" alt="화면 2: 정밀 진단 중" />
       </td>
       <td valign="top" align="center" style="width: 33.33%;">
-        <img src="images/screen3_ko_v5.png" width="100%" style="max-width: 220px; display: block;" alt="화면 3: 진단 결과" />
+        <img src="images/screen3_ko_v6.png" width="100%" style="max-width: 220px; display: block;" alt="화면 3: 진단 결과" />
       </td>
     </tr>
   </tbody>
@@ -35,22 +35,22 @@
 
 #### 1. 보고서 요약 및 종합 점수
 <p align="center">
-  <img src="images/report_summary_ko_v5.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="생성된 HTML 보고서: 요약 및 종합 점수" />
+  <img src="images/report_summary_ko_v6.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="생성된 HTML 보고서: 요약 및 종합 점수" />
 </p>
 
 #### 2. 상세 페이지 통계
 <p align="center">
-  <img src="images/report_stats_ko_v5.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="생성된 HTML 보고서: 상세 페이지 통계" />
+  <img src="images/report_stats_ko_v6.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="생성된 HTML 보고서: 상세 페이지 통계" />
 </p>
 
 #### 3. 영역별 상세 평가 및 점수
 <p align="center">
-  <img src="images/report_categories_ko_v5.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="생성된 HTML 보고서: 영역별 점수" />
+  <img src="images/report_categories_ko_v6.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="생성된 HTML 보고서: 영역별 점수" />
 </p>
 
 #### 4. 상세 개선 문제 트래커
 <p align="center">
-  <img src="images/report_issues_ko_v5.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="생성된 HTML 보고서: 상세 개선 문제" />
+  <img src="images/report_issues_ko_v6.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="생성된 HTML 보고서: 상세 개선 문제" />
 </p>
 
 ---
