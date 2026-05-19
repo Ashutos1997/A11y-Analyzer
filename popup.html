@@ -240,55 +240,64 @@
     <!-- Divider -->
     <div class="s3-divider" aria-hidden="true"></div>
 
-    <!-- Information rows -->
-    <div class="s3-info-section" role="list" aria-label="Accessibility metrics">
-      <div class="s3-info-row" role="listitem">
-        <div class="s3-info-left">
-          <i class="ph ph-translate" aria-hidden="true"></i>
-          <span class="s3-info-label" id="s3-label-lang">Language</span>
+    <!-- Scrollable middle section -->
+    <div class="s3-scroll-body">
+      <!-- Information rows -->
+      <div class="s3-info-section" role="list" aria-label="Accessibility metrics">
+        <div class="s3-info-row" role="listitem">
+          <div class="s3-info-left">
+            <i class="ph ph-translate" aria-hidden="true"></i>
+            <span class="s3-info-label" id="s3-label-lang">Language</span>
+          </div>
+          <span class="s3-info-value" id="s3-info-lang">—</span>
         </div>
-        <span class="s3-info-value" id="s3-info-lang">—</span>
+
+        <div class="s3-info-row" role="listitem">
+          <div class="s3-info-left">
+            <i class="ph ph-hand-pointing" aria-hidden="true"></i>
+            <span class="s3-info-label" id="s3-label-interactive">Interactive</span>
+          </div>
+          <span class="s3-info-value" id="s3-info-interactive">—</span>
+        </div>
+
+        <div class="s3-info-row" role="listitem">
+          <div class="s3-info-left">
+            <i class="ph ph-image" aria-hidden="true"></i>
+            <span class="s3-info-label" id="s3-label-images">Images</span>
+          </div>
+          <span class="s3-info-value" id="s3-info-images">—</span>
+        </div>
+
+        <div class="s3-info-row" role="listitem">
+          <div class="s3-info-left">
+            <i class="ph ph-text-h" aria-hidden="true"></i>
+            <span class="s3-info-label" id="s3-label-headings">Headings</span>
+          </div>
+          <span class="s3-info-value" id="s3-info-headings">—</span>
+        </div>
+
+        <div class="s3-info-row" role="listitem">
+          <div class="s3-info-left">
+            <i class="ph ph-corners-out" aria-hidden="true"></i>
+            <span class="s3-info-label" id="s3-label-viewport">Viewport</span>
+          </div>
+          <span class="s3-info-value" id="s3-info-viewport">—</span>
+        </div>
+
+        <div class="s3-info-row" role="listitem">
+          <div class="s3-info-left">
+            <i class="ph ph-shield-check" aria-hidden="true"></i>
+            <span class="s3-info-label" id="s3-label-protocol">Protocol</span>
+          </div>
+          <span class="s3-info-value" id="s3-info-protocol">—</span>
+        </div>
       </div>
 
-      <div class="s3-info-row" role="listitem">
-        <div class="s3-info-left">
-          <i class="ph ph-hand-pointing" aria-hidden="true"></i>
-          <span class="s3-info-label" id="s3-label-interactive">Interactive</span>
-        </div>
-        <span class="s3-info-value" id="s3-info-interactive">—</span>
-      </div>
+      <!-- Section label above category rows -->
+      <div class="s3-section-label" id="s3-categories-label">Category Scores</div>
 
-      <div class="s3-info-row" role="listitem">
-        <div class="s3-info-left">
-          <i class="ph ph-image" aria-hidden="true"></i>
-          <span class="s3-info-label" id="s3-label-images">Images</span>
-        </div>
-        <span class="s3-info-value" id="s3-info-images">—</span>
-      </div>
-
-      <div class="s3-info-row" role="listitem">
-        <div class="s3-info-left">
-          <i class="ph ph-text-h" aria-hidden="true"></i>
-          <span class="s3-info-label" id="s3-label-headings">Headings</span>
-        </div>
-        <span class="s3-info-value" id="s3-info-headings">—</span>
-      </div>
-
-      <div class="s3-info-row" role="listitem">
-        <div class="s3-info-left">
-          <i class="ph ph-corners-out" aria-hidden="true"></i>
-          <span class="s3-info-label" id="s3-label-viewport">Viewport</span>
-        </div>
-        <span class="s3-info-value" id="s3-info-viewport">—</span>
-      </div>
-
-      <div class="s3-info-row" role="listitem">
-        <div class="s3-info-left">
-          <i class="ph ph-shield-check" aria-hidden="true"></i>
-          <span class="s3-info-label" id="s3-label-protocol">Protocol</span>
-        </div>
-        <span class="s3-info-value" id="s3-info-protocol">—</span>
-      </div>
+      <!-- Category score rows list (populated by JS) -->
+      <div class="s3-categories" id="s3-categories-list" role="list" aria-label="Category scores"></div>
     </div>
 
     <!-- Divider -->

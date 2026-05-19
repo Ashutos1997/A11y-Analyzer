@@ -36,6 +36,7 @@ const elS3InfoImages    = document.getElementById("s3-info-images");
 const elS3InfoHeadings  = document.getElementById("s3-info-headings");
 const elS3InfoViewport  = document.getElementById("s3-info-viewport");
 const elS3InfoProtocol  = document.getElementById("s3-info-protocol");
+const elS3CategoriesList = document.getElementById("s3-categories-list");
 
 // ── State ────────────────────────────────────────────────────
 let activeTab  = null;
@@ -91,7 +92,22 @@ const translations = {
     badgePassing: "Passing",
     badgeFailing: "Failing",
     badgeCritical: "Critical",
-    badgeNoCritical: "No Critical"
+    badgeNoCritical: "No Critical",
+    sectionCategories: "Category Scores",
+    catKeyboard: "Keyboard Nav",
+    catAria: "ARIA",
+    catLandmarks: "Landmarks",
+    catForms: "Forms",
+    catImages: "Images",
+    catHeadings: "Headings",
+    catLinks: "Links & Buttons",
+    catContrast: "Contrast",
+    catInlineLang: "Inline Lang",
+    catDuplicateIds: "Duplicate IDs",
+    catReducedMotion: "Reduced Motion",
+    catTouchTargets: "Touch Targets",
+    catAutoplayMedia: "Autoplay Media",
+    catReflow: "Reflow Zoom"
   },
   ko: {
     headerTitle: "A11Y 분석기",
@@ -140,7 +156,22 @@ const translations = {
     badgePassing: "합격",
     badgeFailing: "불합격",
     badgeCritical: "치명적 오류",
-    badgeNoCritical: "오류 없음"
+    badgeNoCritical: "오류 없음",
+    sectionCategories: "카테고리 점수",
+    catKeyboard: "키보드 탐색",
+    catAria: "ARIA 속성",
+    catLandmarks: "랜드마크 영역",
+    catForms: "폼 양식 및 입력",
+    catImages: "이미지 대체 텍스트",
+    catHeadings: "제목 구조 계층",
+    catLinks: "링크 및 버튼 라벨",
+    catContrast: "색상 대비",
+    catInlineLang: "인라인 언어 지정",
+    catDuplicateIds: "중복 ID 검사",
+    catReducedMotion: "동적 효과 제한",
+    catTouchTargets: "터치 및 클릭 대상",
+    catAutoplayMedia: "자동 재생 미디어",
+    catReflow: "반응형 리플로우"
   }
 };
 
@@ -201,6 +232,9 @@ function applyLanguage(lang) {
   const btnDownloadText = document.getElementById("btn-download-text");
   if (btnRerunText) btnRerunText.textContent = t.btnRerun;
   if (btnDownloadText) btnDownloadText.textContent = t.btnDownload;
+
+  const s3CategoriesLabel = document.getElementById("s3-categories-label");
+  if (s3CategoriesLabel) s3CategoriesLabel.textContent = t.sectionCategories;
 
   // 4. Translate restricted/error views if visible
   const elScannerError = document.getElementById("scanner-error");
@@ -782,6 +816,54 @@ function renderResults(data) {
     ? `진단 완료. 종합 점수: 100점 만점에 ${scores.overall}점. 치명적 오류 ${summary.critical}개, 경고 ${summary.warning}개.`
     : `Audit complete. Overall score: ${scores.overall} out of 100. ${summary.critical} critical issues, ${summary.warning} warnings.`;
   document.getElementById("at-announce").textContent = atText;
+
+  // Clear and populate category score rows
+  if (elS3CategoriesList) {
+    elS3CategoriesList.innerHTML = "";
+    CATEGORIES.forEach(({ key, label, icon }) => {
+      const score = scores[key];
+      if (score !== undefined) {
+        const row = document.createElement("div");
+        row.className = "s3-info-row";
+        row.setAttribute("role", "listitem");
+
+        const left = document.createElement("div");
+        left.className = "s3-info-left";
+
+        const iconWrapper = document.createElement("span");
+        iconWrapper.className = "s3-category-icon-wrapper";
+        iconWrapper.style.display = "inline-flex";
+        iconWrapper.style.alignItems = "center";
+        iconWrapper.style.justifyContent = "center";
+        iconWrapper.style.width = "20px";
+        iconWrapper.style.height = "20px";
+        iconWrapper.style.color = "var(--c-text-secondary)";
+        iconWrapper.style.flexShrink = "0";
+        // Dynamically style any nested SVG to fill wrapper and keep dimensions clean
+        iconWrapper.innerHTML = icon
+          .replace(/width="14"/g, 'width="20"')
+          .replace(/height="14"/g, 'height="20"');
+
+        const labelSpan = document.createElement("span");
+        labelSpan.className = "s3-info-label";
+        const catKey = "cat" + key.charAt(0).toUpperCase() + key.slice(1);
+        labelSpan.textContent = t[catKey] || label;
+
+        left.appendChild(iconWrapper);
+        left.appendChild(labelSpan);
+
+        const right = document.createElement("span");
+        right.className = "s3-info-value";
+        const state = score >= 75 ? "pass" : score >= 50 ? "warning" : "fail";
+        right.setAttribute("data-state", state);
+        right.textContent = score;
+
+        row.appendChild(left);
+        row.appendChild(right);
+        elS3CategoriesList.appendChild(row);
+      }
+    });
+  }
 }
 
 // ── Report generation ─────────────────────────────────────────
