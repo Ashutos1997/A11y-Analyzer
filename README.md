@@ -18,13 +18,13 @@ Designed for designers and developers.
   <tbody>
     <tr>
       <td valign="top" align="center" style="width: 33.33%;">
-        <img src="images/screen1_v4.png" width="100%" style="max-width: 220px; display: block;" alt="Screen 1: Dashboard" />
+        <img src="images/screen1_v5.png" width="100%" style="max-width: 220px; display: block;" alt="Screen 1: Dashboard" />
       </td>
       <td valign="top" align="center" style="width: 33.33%;">
-        <img src="images/screen2_v4.png" width="100%" style="max-width: 220px; display: block;" alt="Screen 2: Scanning" />
+        <img src="images/screen2_v5.png" width="100%" style="max-width: 220px; display: block;" alt="Screen 2: Scanning" />
       </td>
       <td valign="top" align="center" style="width: 33.33%;">
-        <img src="images/screen3_v4.png" width="100%" style="max-width: 220px; display: block;" alt="Screen 3: Results" />
+        <img src="images/screen3_v5.png" width="100%" style="max-width: 220px; display: block;" alt="Screen 3: Results" />
       </td>
     </tr>
   </tbody>
@@ -36,22 +36,22 @@ The audit report is dynamically compiled as a fully standalone, highly responsiv
 
 #### 1. Report Overview & Score
 <p align="center">
-  <img src="images/report_summary_v4.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="Generated HTML Report: Summary & Overall Score" />
+  <img src="images/report_summary_v5.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="Generated HTML Report: Summary & Overall Score" />
 </p>
 
 #### 2. Comprehensive Page Statistics
 <p align="center">
-  <img src="images/report_stats_v4.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="Generated HTML Report: Page Statistics Grid" />
+  <img src="images/report_stats_v5.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="Generated HTML Report: Page Statistics Grid" />
 </p>
 
 #### 3. Category Breakdown & Health Scores
 <p align="center">
-  <img src="images/report_categories_v4.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="Generated HTML Report: Category Breakdown Table" />
+  <img src="images/report_categories_v5.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="Generated HTML Report: Category Breakdown Table" />
 </p>
 
 #### 4. Detailed Remediation Issue Tracker
 <p align="center">
-  <img src="images/report_issues_v4.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="Generated HTML Report: Detailed Issue List" />
+  <img src="images/report_issues_v5.png" width="700" style="border: 1px solid var(--c-border-subtle); border-radius: 8px;" alt="Generated HTML Report: Detailed Issue List" />
 </p>
 
 ---
