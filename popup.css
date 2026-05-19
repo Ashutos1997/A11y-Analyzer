@@ -485,6 +485,7 @@ body::after {
 
 
 .s1-actions {
+  margin-top: auto;
   padding: var(--sp-3) var(--gutter) var(--sp-4) var(--gutter); /* 12px top, 16px horizontal, 16px bottom matching exact grid specs */
   flex-shrink: 0;
 }
@@ -1020,7 +1021,8 @@ body::before {
   display: flex;
   flex-direction: column;
   width: 100%;
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
 }
 
 .s2-error-hero {
@@ -1089,6 +1091,7 @@ body::before {
 }
 
 .s2-error-actions {
+  margin-top: auto;
   padding: var(--sp-4) var(--gutter);
   flex-shrink: 0;
 }
