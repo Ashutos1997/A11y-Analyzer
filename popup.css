@@ -331,7 +331,7 @@ body::after {
 
 /* Site identity — clean on white, no container */
 .s1-site {
-  padding: var(--sp-5) var(--gutter) var(--sp-4);  /* 20px 16px 16px */
+  padding: var(--sp-3.5) var(--gutter) var(--sp-2);  /* 14px 16px 8px */
 }
 
 .s1-site__identity-row {
@@ -412,8 +412,8 @@ body::after {
 .s1-info-list {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2); /* 8px */
-  padding: var(--sp-4) var(--gutter) var(--sp-4); /* 16px top, bottom and sides */
+  gap: 6px; /* Reduced gap from 8px to 6px */
+  padding: var(--sp-3) var(--gutter) var(--sp-3); /* Reduced from 16px to 12px top/bottom */
   flex-shrink: 0;
 }
 
@@ -481,9 +481,8 @@ body::after {
 }
 
 
-/* CTA button — 16px padding, 44px height */
 .s1-actions {
-  padding: var(--sp-4) var(--gutter); /* 16px */
+  padding: var(--sp-3) var(--gutter) var(--sp-5) var(--gutter); /* 12px top, 16px horizontal, 20px bottom for premium balanced aesthetics */
   flex-shrink: 0;
 }
 
